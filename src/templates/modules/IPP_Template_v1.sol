@@ -36,6 +36,15 @@ interface IPP_Template_v1 is IPaymentProcessor_v1 {
     //--------------------------------------------------------------------------
     // Structs
 
+    /// @notice Struct to hold cross-chain message data
+    struct CrossChainMessage {
+        uint messageId;
+        address sourceChain;
+        address targetChain;
+        bytes payload;
+        bool executed;
+    }
+
     //--------------------------------------------------------------------------
     // Events
 
@@ -46,6 +55,20 @@ interface IPP_Template_v1 is IPaymentProcessor_v1 {
         uint indexed oldPayoutAmount_, uint indexed newPayoutAmount_
     );
 
+    /// @notice Emitted when a cross-chain message is sent
+    /// @param messageId Unique identifier for the message
+    /// @param targetChain Address of the target chain
+    event CrossChainMessageSent(
+        uint indexed messageId, address indexed targetChain
+    );
+
+    /// @notice Emitted when a cross-chain message is received
+    /// @param messageId Unique identifier for the message
+    /// @param sourceChain Address of the source chain
+    event CrossChainMessageReceived(
+        uint indexed messageId, address indexed sourceChain
+    );
+
     //--------------------------------------------------------------------------
     // Errors
 
@@ -54,6 +77,17 @@ interface IPP_Template_v1 is IPaymentProcessor_v1 {
 
     /// @notice Client is not valid.
     error Module__PP_Template__ClientNotValid();
+
+    error Module__PP_CrossChain__NotValidClient();
+
+    error Module__PP_CrossChain__InvalidAmount();
+
+    /// @notice Message has already been executed
+    error Module__PP_CrossChain_MessageAlreadyExecuted();
+    /// @notice Invalid chain ID provided
+    error Module__PP_CrossChain_InvalidChainId();
+    /// @notice Message verification failed
+    error Module__PP_CrossChain_MessageVerificationFailed();
 
     //--------------------------------------------------------------------------
     // Public (Getter)
