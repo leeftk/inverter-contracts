@@ -4,10 +4,20 @@ pragma solidity ^0.8.0;
 // Internal Dependencies
 
 // External Dependencies
+import {IERC20PaymentClientBase_v1} from "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
-interface IPP_Template_v1 {
+interface IPP_CrossChain_v1 {
     //--------------------------------------------------------------------------
     // Structs
+
+    /// @notice Struct to hold cross-chain message data
+    struct CrossChainMessage {
+        uint256 messageId;
+        address sourceChain;
+        address targetChain;
+        bytes payload;
+        bool executed;
+    }
 
     //--------------------------------------------------------------------------
     // Events
@@ -19,6 +29,16 @@ interface IPP_Template_v1 {
         uint indexed oldPayoutAmount, uint indexed newPayoutAmount
     );
 
+    /// @notice Emitted when a cross-chain message is sent
+    /// @param messageId Unique identifier for the message
+    /// @param targetChain Address of the target chain
+    event CrossChainMessageSent(uint256 indexed messageId, address indexed targetChain);
+
+    /// @notice Emitted when a cross-chain message is received
+    /// @param messageId Unique identifier for the message
+    /// @param sourceChain Address of the source chain
+    event CrossChainMessageReceived(uint256 indexed messageId, address indexed sourceChain);
+
     //--------------------------------------------------------------------------
     // Errors
 
@@ -28,13 +48,23 @@ interface IPP_Template_v1 {
     /// @notice Client is not valid.
     error Module__PP_Template__NotValidClient();
 
+    error Module__PP_CrossChain__NotValidClient();
+
+    error Module__PP_CrossChain__InvalidAmount();
+
+
+    /// @notice Message has already been executed
+    error Module__PP_CrossChain_MessageAlreadyExecuted();
+    /// @notice Invalid chain ID provided
+    error Module__PP_CrossChain_InvalidChainId();
+    /// @notice Message verification failed
+    error Module__PP_CrossChain_MessageVerificationFailed();
+
     //--------------------------------------------------------------------------
     // Public (Getter)
 
-    /// @notice Returns the payout amount for each payment order.
-    /// @param payoutAmount The payout amount.
-    function getPayoutAmountMultiplier() external returns (uint payoutAmount);
-
-    //--------------------------------------------------------------------------
-    // Public (Mutation)
+    function _executeBridgeTransfer(
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) external returns (bytes memory);
 }

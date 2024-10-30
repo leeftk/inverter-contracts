@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.23;
 
-// Internal Dependencies
-import {IOrchestrator_v1} from
-    "src/orchestrator/interfaces/IOrchestrator_v1.sol";
+import {IOrchestrator_v1} from "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {IPaymentProcessor_v1} from "@pp/IPaymentProcessor_v1.sol";
-import {IERC20PaymentClientBase_v1} from
-    "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
-import {IPP_Template_v1} from "./IPP_Template_v1.sol";
+import {IERC20PaymentClientBase_v1} from "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
+import {Module_v1} from "src/modules/base/Module_v1.sol";
+import {IPP_CrossChain_v1} from "./IPP_Template_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
-
-// External Dependencies
-import {IERC20} from "@oz/token/ERC20/IERC20.sol";
 
 /**
  * @title   Inverter Template Payment Processor
@@ -32,14 +27,9 @@ import {IERC20} from "@oz/token/ERC20/IERC20.sol";
  *
  * @author  Inverter Network
  */
-contract PP_Template_v1 is IPP_Template_v1, IPaymentProcessor_v1, Module_v1 {
-    //--------------------------------------------------------------------------
-    // Libraries
+abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, Module_v1 {
 
-    // Add library usage here
 
-    //--------------------------------------------------------------------------
-    // ERC165
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
@@ -49,18 +39,16 @@ contract PP_Template_v1 is IPP_Template_v1, IPaymentProcessor_v1, Module_v1 {
         override(Module_v1)
         returns (bool)
     {
-        return interfaceId_ == type(IPP_Template_v1).interfaceId
+        return interfaceId_ == type(IPP_CrossChain_v1).interfaceId
             || interfaceId_ == type(IPaymentProcessor_v1).interfaceId
             || super.supportsInterface(interfaceId_);
     }
-
-    //--------------------------------------------------------------------------
-    // Constants
-
-    // Add constants here
-
     //--------------------------------------------------------------------------
     // State
+
+    /// @dev Mapping of payment ID to bridge transfer return data
+    mapping(uint256 => bytes) internal _bridgeData;
+
 
     /// @dev    Payout amount multiplier.
     uint internal _payoutAmountMultiplier;
@@ -69,9 +57,16 @@ contract PP_Template_v1 is IPP_Template_v1, IPaymentProcessor_v1, Module_v1 {
     uint internal _paymentId;
 
     //--------------------------------------------------------------------------
-    // Modifiers
+    // Events
 
-    /// @dev    Checks that the client is calling for itself.
+    event PaymentProcessed(
+        uint256 indexed paymentId,
+        address recipient,
+        address token,
+        uint256 amount
+    );
+
+        /// @dev    Checks that the client is calling for itself.
     modifier validClient(address client_) {
         // modifier logic moved to internal function for contract size reduction
         _validClientModifier(client_);
@@ -79,84 +74,31 @@ contract PP_Template_v1 is IPP_Template_v1, IPaymentProcessor_v1, Module_v1 {
     }
 
     //--------------------------------------------------------------------------
-    // Constructor & Init
+    // Public Functions
 
-    /// @inheritdoc Module_v1
-    function init(
-        IOrchestrator_v1 orchestrator_,
-        Metadata memory metadata,
-        bytes memory configData
-    ) external override(Module_v1) initializer {
-        __Module_init(orchestrator_, metadata);
-
-        // Decode module specific init data through use of configData bytes. This value is an example value used to
-        // showcase the setters/getters and internal functions/state formating style.
-        (uint payoutAmountMultiplier_) = abi.decode(configData, (uint));
-
-        // Set init state.
-        _setPayoutAmountMultiplier(payoutAmountMultiplier_);
-    }
-
-    //--------------------------------------------------------------------------
-    // Public (Getters)
-
-    /// @inheritdoc IPP_Template_v1
-    function getPayoutAmountMultiplier()
-        external
-        view
-        returns (uint payoutAmount_)
-    {
-        return _payoutAmountMultiplier;
-    }
-
-    //--------------------------------------------------------------------------
-    // Public (Mutation)
-
-    /// @inheritdoc IPaymentProcessor_v1
-    function processPayments(IERC20PaymentClientBase_v1 client_)
-        external
+    function processPayments(IERC20PaymentClientBase_v1 client_, bytes memory executionData) 
+        external 
         validClient(address(client_))
     {
-        // The IERC20PaymentClientBase_v1 client should be used to access created payment orders
-        // in the Logic Module (LM) implementing the interface. The interface should be referenced to see the different
-        // functionalities provided by the ERC20PaymentClientBase_v1.
-
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client_.collectPaymentOrders();
+        
+        for (uint256 i = 0; i < orders.length; i++) {
+            bytes memory bridgeData = this._executeBridgeTransfer(orders[i], executionData);
+            _bridgeData[_paymentId] = bridgeData;
 
-        // Custom logic to proces the payment orders should be implemented below. This template implements
-        // a straight forward token transfer using the first order of the payment order array for simplicity.
+            emit PaymentProcessed(
+                _paymentId,
+                orders[i].recipient,
+                orders[i].paymentToken,
+                orders[i].amount
+            );
+            _paymentId++;
 
-        // Get payment order details
-        address recipient = orders[0].recipient;
-        address token_ = orders[0].paymentToken;
-        uint amount_ = orders[0].amount * _payoutAmountMultiplier;
-        _paymentId = _paymentId + 1;
-
-        // Emit event of the IPaymentProcessor_v1. This is used by Inverter's indexer
-        emit PaymentOrderProcessed(
-            address(client_),
-            orders[0].recipient,
-            orders[0].paymentToken,
-            amount_,
-            0,
-            0,
-            0
-        );
-
-        // Transfer tokens from {IERC20PaymentClientBase_v1} to order recipients.
-        // Please note, when processing multiple payment orders then letting the call revert as in this example
-        // might not be the best solution. Ways to handle this by implementing the `unclaimable` function can be
-        // found in the other Payment Processor (PP) implementations.
-        IERC20(token_).transferFrom(address(client_), recipient, amount_);
-
-        // Inform the client about the amount that was released, to keep
-        //      the accounting correct.
-        client_.amountPaid(token_, amount_);
-
-        // Emit event of the IPaymentProcessor_v1. This is used by Inverter's indexer
-        emit TokensReleased(recipient, token_, amount_);
+            // Inform the client about the processed amount
+            client_.amountPaid(orders[i].paymentToken, orders[i].amount);
+        }
     }
 
     /// @inheritdoc IPaymentProcessor_v1
@@ -205,6 +147,9 @@ contract PP_Template_v1 is IPP_Template_v1, IPaymentProcessor_v1, Module_v1 {
     //--------------------------------------------------------------------------
     // Internal
 
+        // Virtual Functions
+
+    /// @notice Execute the cross-chain bridge transfer
     /// @dev Internal function to set the new payout amount multiplier.
     /// @param newPayoutAmountMultiplier_ Payout amount multiplier to be set in the state. Cannot be zero.
     function _setPayoutAmountMultiplier(uint newPayoutAmountMultiplier_)
@@ -241,5 +186,18 @@ contract PP_Template_v1 is IPP_Template_v1, IPaymentProcessor_v1, Module_v1 {
     }
 
     //--------------------------------------------------------------------------
-    // Internal override
+    // Virtual Functions
+
+    /// @notice Execute the cross-chain bridge transfer
+    /// @dev Override this function to implement specific bridge logic
+    /// @param order The payment order containing all necessary transfer details
+    /// @return bridgeData Arbitrary data returned by the bridge implementation
+    function _executeBridgeTransfer(
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) external virtual returns (bytes memory) {
+        // Your implementation here
+        return ""; // Replace with actual implementation return value
+    }
+
 }
