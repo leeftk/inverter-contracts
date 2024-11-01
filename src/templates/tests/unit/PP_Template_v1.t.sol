@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
-<<<<<<< HEAD
 // Internal
 import {
     ModuleTest,
@@ -12,18 +11,6 @@ import {OZErrors} from "test/utils/errors/OZErrors.sol";
 
 // External
 import {Clones} from "@oz/proxy/Clones.sol";
-=======
-// // Internal Dependencies
-// import {
-//     ModuleTest, 
-//     IModule_v1,
-//     IOrchestrator_v1
-// } from "test/modules/ModuleTest.sol";
-// import {OZErrors} from "test/utils/errors/OZErrors.sol";
-
-// // External Dependencies
-// import {Clones} from "@oz/proxy/Clones.sol";
->>>>>>> 79edbd43 (add cross-chain module, contracts compile)
 
 // // Tests and Mocks
 // //import cr
@@ -35,7 +22,6 @@ import {Clones} from "@oz/proxy/Clones.sol";
 // //import exposed
 // import {PP_CrossChain_v1_Exposed} from "./PP_Template_v1_Exposed.sol";
 
-<<<<<<< HEAD
 // System under Test (SuT)
 import {
     IPP_Template_v1,
@@ -66,38 +52,6 @@ contract PP_Template_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     // Constants
     uint internal constant _payoutAmountMultiplier = 2;
-=======
-// // System under test (SuT)
-// import {
-//     IPP_CrossChain_v1,
-//     PP_CrossChain_v1,
-//     IPaymentProcessor_v1
-// } from "src/templates/modules/PP_Template_v1.sol";
-
-// /**
-//  * @title   Inverter Template Payment Processor
-//  *
-//  * @notice  Basic template payment processor used to showcase the unit testing setup
-//  *
-//  * @dev     Not all functions are tested in this template. Placeholders of the functions that are not tested are added
-//  *          into the contract. This test showcases the following:
-//  *          - Inherit from the ModuleTest contract to enable interaction with the Inverter workflow.
-//  *          - Showcases the setup of the workflow, uses in test unit tests.
-//  *          - Pre-defined layout for all setup and functions to be tested.
-//  *          - Shows the use of Gherkin for documenting the testing. VS Code extension used for formatting is recommended.
-//  *          - Shows the use of the modifierInPlace pattern to test the modifier placement.
-//  *
-//  * @custom:security-contact security@inverter.network
-//  *                          In case of any concerns or findings, please refer to our Security Policy
-//  *                          at security.inverter.network or email us directly!
-//  *
-//  * @author  Inverter Network
-//  */
-// contract PP_Template_v1_Test is ModuleTest {
-//     //--------------------------------------------------------------------------
-//     // Constants
-//     uint internal constant _payoutAmountMultiplier = 2;
->>>>>>> 79edbd43 (add cross-chain module, contracts compile)
 
 //     //--------------------------------------------------------------------------
 //     // State
@@ -176,22 +130,11 @@ contract PP_Template_v1_Test is ModuleTest {
 //     // //--------------------------------------------------------------------------
 //     // // Test: Modifiers
 
-<<<<<<< HEAD
         vm.expectRevert(
             IPP_Template_v1.Module__PP_Template__ClientNotValid.selector
         );
         paymentProcessor.processPayments(nonRegisteredClient);
     }
-=======
-//     // /* Test validClient modifier in place (extensive testing done through internal modifier functions)
-//     //     └── Given the modifier is in place
-//     //         └── When the function processPayment() is called
-//     //             └── Then it should revert
-//     // */
-//     // function testProcessPayments_modifierInPlace() public {
-//     //     // ERC20PaymentClientBaseV1Mock nonRegisteredClient =
-//     //     //     new ERC20PaymentClientBaseV1Mock();
->>>>>>> 79edbd43 (add cross-chain module, contracts compile)
 
 //     //     // vm.expectRevert(
 //     //     //     IPP_CrossChain_v1.Module__PP_CrossChain__NotValidClient.selector
