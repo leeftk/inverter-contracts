@@ -48,7 +48,7 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
 
     /// @dev Mapping of payment ID to bridge transfer return data
     mapping(uint256 => bytes) internal _bridgeData;
-
+    bytes public executionData;
 
     /// @dev    Payout amount multiplier.
     uint internal _payoutAmountMultiplier;
@@ -75,8 +75,8 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
 
     //--------------------------------------------------------------------------
     // Public Functions
-
-    function processPayments(IERC20PaymentClientBase_v1 client_, bytes memory executionData) 
+   
+    function processPayments(IERC20PaymentClientBase_v1 client_) 
         external 
         validClient(address(client_))
     {
@@ -147,7 +147,6 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
     //--------------------------------------------------------------------------
     // Internal
 
-        // Virtual Functions
 
     /// @notice Execute the cross-chain bridge transfer
     /// @dev Internal function to set the new payout amount multiplier.
@@ -195,9 +194,16 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) external virtual returns (bytes memory) {
-        // Your implementation here
+    ) external payable virtual returns (bytes memory) {
         return ""; // Replace with actual implementation return value
     }
 
 }
+
+
+
+
+//// payment process module ---> exposing internal function 
+
+
+//// build bridge mock 
