@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 // Internal Dependencies
 
 // External Dependencies
-import {IERC20PaymentClientBase_v1} from "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
+import {IERC20PaymentClientBase_v1} from
+    "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
 interface IPP_CrossChain_v1 {
     //--------------------------------------------------------------------------
@@ -12,7 +13,7 @@ interface IPP_CrossChain_v1 {
 
     /// @notice Struct to hold cross-chain message data
     struct CrossChainMessage {
-        uint256 messageId;
+        uint messageId;
         address sourceChain;
         address targetChain;
         bytes payload;
@@ -32,12 +33,16 @@ interface IPP_CrossChain_v1 {
     /// @notice Emitted when a cross-chain message is sent
     /// @param messageId Unique identifier for the message
     /// @param targetChain Address of the target chain
-    event CrossChainMessageSent(uint256 indexed messageId, address indexed targetChain);
+    event CrossChainMessageSent(
+        uint indexed messageId, address indexed targetChain
+    );
 
     /// @notice Emitted when a cross-chain message is received
     /// @param messageId Unique identifier for the message
     /// @param sourceChain Address of the source chain
-    event CrossChainMessageReceived(uint256 indexed messageId, address indexed sourceChain);
+    event CrossChainMessageReceived(
+        uint indexed messageId, address indexed sourceChain
+    );
 
     //--------------------------------------------------------------------------
     // Errors
@@ -52,7 +57,6 @@ interface IPP_CrossChain_v1 {
 
     error Module__PP_CrossChain__InvalidAmount();
 
-
     /// @notice Message has already been executed
     error Module__PP_CrossChain_MessageAlreadyExecuted();
     /// @notice Invalid chain ID provided
@@ -66,5 +70,5 @@ interface IPP_CrossChain_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) external payable returns (bytes memory);
+    ) external returns (bytes memory); //@note: The error says if declared in interface , it should be external only, need to check this
 }

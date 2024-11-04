@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.23;
 
-import {IOrchestrator_v1} from "src/orchestrator/interfaces/IOrchestrator_v1.sol";
+import {IOrchestrator_v1} from
+    "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {IPaymentProcessor_v1} from "@pp/IPaymentProcessor_v1.sol";
-import {IERC20PaymentClientBase_v1} from "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
+import {IERC20PaymentClientBase_v1} from
+    "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {Module_v1} from "src/modules/base/Module_v1.sol";
 import {IPP_CrossChain_v1} from "./IPP_Template_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
@@ -27,10 +29,11 @@ import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
  *
  * @author  Inverter Network
  */
-abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, Module_v1 {
-
-
-
+abstract contract PP_CrossChain_v1 is
+    IPP_CrossChain_v1,
+    IPaymentProcessor_v1,
+    Module_v1
+{
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
@@ -47,7 +50,7 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
     // State
 
     /// @dev Mapping of payment ID to bridge transfer return data
-    mapping(uint256 => bytes) internal _bridgeData;
+    mapping(uint => bytes) internal _bridgeData;
     bytes public executionData;
 
     /// @dev    Payout amount multiplier.
@@ -60,13 +63,10 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
     // Events
 
     event PaymentProcessed(
-        uint256 indexed paymentId,
-        address recipient,
-        address token,
-        uint256 amount
+        uint indexed paymentId, address recipient, address token, uint amount
     );
 
-        /// @dev    Checks that the client is calling for itself.
+    /// @dev    Checks that the client is calling for itself.
     modifier validClient(address client_) {
         // modifier logic moved to internal function for contract size reduction
         _validClientModifier(client_);
@@ -75,17 +75,18 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
 
     //--------------------------------------------------------------------------
     // Public Functions
-   
-    function processPayments(IERC20PaymentClientBase_v1 client_) 
-        external 
+
+    function processPayments(IERC20PaymentClientBase_v1 client_)
+        external
         validClient(address(client_))
     {
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client_.collectPaymentOrders();
-        
-        for (uint256 i = 0; i < orders.length; i++) {
-            bytes memory bridgeData = this._executeBridgeTransfer(orders[i], executionData);
+
+        for (uint i = 0; i < orders.length; i++) {
+            bytes memory bridgeData =
+                this._executeBridgeTransfer(orders[i], executionData);
             _bridgeData[_paymentId] = bridgeData;
 
             emit PaymentProcessed(
@@ -147,7 +148,6 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
     //--------------------------------------------------------------------------
     // Internal
 
-
     /// @notice Execute the cross-chain bridge transfer
     /// @dev Internal function to set the new payout amount multiplier.
     /// @param newPayoutAmountMultiplier_ Payout amount multiplier to be set in the state. Cannot be zero.
@@ -194,16 +194,11 @@ abstract contract PP_CrossChain_v1 is IPP_CrossChain_v1, IPaymentProcessor_v1, M
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) external payable virtual returns (bytes memory) {
-        return ""; // Replace with actual implementation return value
+    ) public virtual returns (bytes memory) {
+        return bytes("");
     }
-
 }
 
+//// payment process module ---> exposing internal function
 
-
-
-//// payment process module ---> exposing internal function 
-
-
-//// build bridge mock 
+//// build bridge mock
