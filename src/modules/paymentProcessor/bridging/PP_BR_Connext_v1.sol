@@ -35,17 +35,18 @@ import {SafeERC20} from "@oz/token/ERC20/utils/SafeERC20.sol";
  * @author  Inverter Network
  */
 
- //TODO: Here's my guess of how we should do this
- // - Inherit from the PP_Template_v1 base and maybe event he interface too?
+ //TODO: Here's my guess of how we should do next
+ // - Inherit from the PP_Template_v1 base and maybe even the interface too?
  // - Implement the internal execute bridge function in here, aka wrap it with an external function and leave space for logic
  // - Add the logic from Everclear contract to the executeBridge fucntion (or connext if that's easier since we're mocking it for now)
  // - Make sure it compiles and the if you have time write a test file that copiles
- // - Test file can be in this same folder with the same nameing convention as PP_Template_v1_.t.sol
- // - Feel free to copy pp_template_v1.t.sol to get started
+ // - Test file can be in this same folder with the same nameing convention as PP_Template_v1_.t.sol, except for the name I choose here
+ // - Feel free to copy pp_template_v1.t.sol setup and helper fucntions to get started
+ // - Make sure this compiles  
  // - We then need to create mocks that will mock a call to the bridge
  // - This is straightforward, just check to see what event the connext bridge emits after deposit
- // - Create a function with the same selector in the mock and when the proper params are passed emit the event
- // - We then need to write some basic testcases that will test the bridge logic
+ // - Create a function with the same selector in the mock, when the proper params are passed it should emit the event
+ // - We then need to write some basic testcases that will test the bridge logic, this should be mocked
 contract PP_Simple_v1 is Module_v1, IPaymentProcessor_v1 {
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId)
