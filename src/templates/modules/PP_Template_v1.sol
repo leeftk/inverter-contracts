@@ -200,7 +200,7 @@ contract PP_Template_v1 is IPP_Template_v1, Module_v1 {
         address, /*client_*/
         address, /*token_*/
         address /*receiver_*/
-    ) external pure {
+    ) external virtual {
         return;
     }
 
@@ -241,6 +241,7 @@ contract PP_Template_v1 is IPP_Template_v1, Module_v1 {
     function _validPaymentReceiver(address receiver_)
         internal
         view
+        virtual
         returns (bool)
     {
         return !(
