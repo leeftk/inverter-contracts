@@ -5,9 +5,10 @@ pragma solidity 0.8.23;
 import {IOrchestrator_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {
-    IPaymentProcessor_v1, I
+    IPaymentProcessor_v1,
     IERC20PaymentClientBase_v1
 } from "src/modules/paymentProcessor/IPaymentProcessor_v1.sol";
+import {PP_CrossChain_v1} from "src/templates/modules/PP_Template_v1.sol";
 
 // Internal Dependencies
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
@@ -35,25 +36,29 @@ import {SafeERC20} from "@oz/token/ERC20/utils/SafeERC20.sol";
  * @author  Inverter Network
  */
 
- //TODO: Here's my guess of how we should do next
- // - Inherit from the PP_Template_v1 base and maybe even the interface too?
- // - Implement the internal execute bridge function in here, aka wrap it with an external function and leave space for logic
- // - Add the logic from Everclear contract to the executeBridge fucntion (or connext if that's easier since we're mocking it for now)
- // - Make sure it compiles and the if you have time write a test file that copiles
- // - Test file can be in this same folder with the same nameing convention as PP_Template_v1_.t.sol, except for the name I choose here
- // - Feel free to copy pp_template_v1.t.sol setup and helper fucntions to get started
- // - Make sure this compiles  
- // - We then need to create mocks that will mock a call to the bridge
- // - This is straightforward, just check to see what event the connext bridge emits after deposit
- // - Create a function with the same selector in the mock, when the proper params are passed it should emit the event
- // - We then need to write some basic testcases that will test the bridge logic, this should be mocked
-contract PP_Simple_v1 is Module_v1, IPaymentProcessor_v1 {
+//TODO: Here's my guess of how we should do next
+// - Inherit from the PP_Template_v1 base and maybe even the interface too?
+// - Implement the internal execute bridge function in here, aka wrap it with an external function and leave space for logic
+// - Add the logic from Everclear contract to the executeBridge fucntion (or connext if that's easier since we're mocking it for now)
+// - Make sure it compiles and the if you have time write a test file that copiles
+// - Test file can be in this same folder with the same nameing convention as PP_Template_v1_.t.sol, except for the name I choose here
+// - Feel free to copy pp_template_v1.t.sol setup and helper fucntions to get started
+// - Make sure this compiles
+// - We then need to create mocks that will mock a call to the bridge
+// - This is straightforward, just check to see what event the connext bridge emits after deposit
+// - Create a function with the same selector in the mock, when the proper params are passed it should emit the event
+// - We then need to write some basic testcases that will test the bridge logic, this should be mocked
+contract PP_BR_Connext_v1 is
+    PP_CrossChain_v1 //@note -> PP_CrossChain_v1 already inherits from Module_v1 and IPaymentProcessor_v1
+{
+    //Module_v1,
+    //IPaymentProcessor_v1
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId)
         public
         view
         virtual
-        override(Module_v1)
+        override(PP_CrossChain_v1)
         returns (bool)
     {
         return interfaceId == type(IPaymentProcessor_v1).interfaceId
@@ -73,13 +78,13 @@ contract PP_Simple_v1 is Module_v1, IPaymentProcessor_v1 {
         _;
     }
 
-    /// @dev    Checks that the client is calling for itself.
-    modifier validClient(IERC20PaymentClientBase_v1 client) {
-        if (_msgSender() != address(client)) {
-            revert Module__PaymentProcessor__CannotCallOnOtherClientsOrders();
-        }
-        _;
-    }
+    // /// @dev    Checks that the client is calling for itself.
+    // modifier validClient(address client) {
+    //     if (_msgSender() != client) {
+    //         revert Module__PaymentProcessor__CannotCallOnOtherClientsOrders();
+    //     }
+    //     _;
+    // }
 
     //--------------------------------------------------------------------------
     // Storage
@@ -110,17 +115,18 @@ contract PP_Simple_v1 is Module_v1, IPaymentProcessor_v1 {
     /// @inheritdoc IPaymentProcessor_v1
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
+        override(PP_CrossChain_v1)
         onlyModule
-        validClient(client)
-    {};
+        validClient(address(client))
+    {}
 
-    function
     /// @inheritdoc IPaymentProcessor_v1
     function cancelRunningPayments(IERC20PaymentClientBase_v1 client)
         external
         view
+        override
         onlyModule
-        validClient(client)
+        validClient(address(client))
     {
         // Since we pay out on processing, this function does nothing
         return;
@@ -130,32 +136,33 @@ contract PP_Simple_v1 is Module_v1, IPaymentProcessor_v1 {
     function unclaimable(address client, address token, address paymentReceiver)
         public
         view
+        override
         returns (uint amount)
     {
         return unclaimableAmountsForRecipient[client][token][paymentReceiver];
     }
 
-    /// @inheritdoc IPaymentProcessor_v1
-    function claimPreviouslyUnclaimable(
-        address client,
-        address token,
-        address receiver
-    ) external {
-        if (unclaimable(client, token, _msgSender()) == 0) {
-            revert Module__PaymentProcessor__NothingToClaim(
-                client, _msgSender()
-            );
-        }
+    // /// @inheritdoc IPaymentProcessor_v1
+    // function claimPreviouslyUnclaimable(
+    //     address client,
+    //     address token,
+    //     address receiver
+    // ) external override {
+    //     if (unclaimable(client, token, _msgSender()) == 0) {
+    //         revert Module__PaymentProcessor__NothingToClaim(
+    //             client, _msgSender()
+    //         );
+    //     }
 
-        _claimPreviouslyUnclaimable(client, token, receiver);
-    }
+    //     _claimPreviouslyUnclaimable(client, token, receiver);
+    // }
 
     /// @inheritdoc IPaymentProcessor_v1
     function validPaymentOrder(
         IERC20PaymentClientBase_v1.PaymentOrder memory order
-    ) external returns (bool) {
-        return _validPaymentReceiver(order.recipient)
-            && _validTotal(order.amount) && _validPaymentToken(order.paymentToken);
+    ) external view override returns (bool) {
+        return
+            _validPaymentReceiver(order.recipient) && _validTotal(order.amount); //&& _validPaymentToken(order.paymentToken);
     }
 
     //--------------------------------------------------------------------------
@@ -190,7 +197,12 @@ contract PP_Simple_v1 is Module_v1, IPaymentProcessor_v1 {
     /// @notice Validate address input.
     /// @param  addr Address to validate.
     /// @return True if address is valid.
-    function _validPaymentReceiver(address addr) internal view returns (bool) {
+    function _validPaymentReceiver(address addr)
+        internal
+        view
+        override
+        returns (bool)
+    {
         return !(
             addr == address(0) || addr == _msgSender() || addr == address(this)
                 || addr == address(orchestrator())

@@ -51,7 +51,7 @@ abstract contract PP_CrossChain_v1 is
 
     /// @dev Mapping of payment ID to bridge transfer return data
     mapping(uint => bytes) internal _bridgeData;
-    
+
     bytes public executionData;
 
     /// @dev    Payout amount multiplier.
@@ -79,6 +79,7 @@ abstract contract PP_CrossChain_v1 is
 
     function processPayments(IERC20PaymentClientBase_v1 client_)
         external
+        virtual
         validClient(address(client_))
     {
         // Collect orders from the client
@@ -107,6 +108,7 @@ abstract contract PP_CrossChain_v1 is
     function cancelRunningPayments(IERC20PaymentClientBase_v1 client_)
         external
         view
+        virtual
         validClient(address(client_))
     {
         // This function is used to implement custom logic to cancel running payments. If the nature of
@@ -119,7 +121,7 @@ abstract contract PP_CrossChain_v1 is
         address, /*client_*/
         address, /*token_*/
         address /*paymentReceiver_*/
-    ) external pure returns (uint amount_) {
+    ) external view virtual returns (uint amount_) {
         // This function is used to check if there are unclaimable tokens for a specific client, token and payment
         // receiver. As this template only executes one payment order at a time, this function is not utilzed and can
         // return 0.
@@ -131,14 +133,14 @@ abstract contract PP_CrossChain_v1 is
         address, /*client_*/
         address, /*token_*/
         address /*receiver_*/
-    ) external pure {
+    ) external virtual {
         return;
     }
 
     /// @inheritdoc IPaymentProcessor_v1
     function validPaymentOrder(
         IERC20PaymentClientBase_v1.PaymentOrder memory order_
-    ) external view returns (bool) {
+    ) external virtual returns (bool) {
         // This function is used to validate the payment order created on the client side (LM) with the input required by the
         // Payment Processor (PP). The function should return true if the payment order is valid and false if it is not.
 
@@ -170,6 +172,7 @@ abstract contract PP_CrossChain_v1 is
     function _validPaymentReceiver(address addr_)
         internal
         view
+        virtual
         returns (bool)
     {
         return !(
