@@ -48,10 +48,7 @@ import {
  *
  * @author  Inverter Network
  */
-contract PP_Template_v1_Test is ModuleTest {
-    //--------------------------------------------------------------------------
-    // Constants
-    uint internal constant _payoutAmountMultiplier = 2;
+
 
 contract PP_Template_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
