@@ -198,7 +198,7 @@ abstract contract PP_CrossChain_v1 is
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) public virtual returns (bytes memory) {
+    ) public payable virtual returns (bytes memory) {
         return bytes("");
     }
 }

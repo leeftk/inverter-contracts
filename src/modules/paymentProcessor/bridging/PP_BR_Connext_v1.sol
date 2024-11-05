@@ -9,7 +9,8 @@ import {
     IERC20PaymentClientBase_v1
 } from "src/modules/paymentProcessor/IPaymentProcessor_v1.sol";
 import {PP_CrossChain_v1} from "src/templates/modules/PP_Template_v1.sol";
-
+import {IEverclearSpoke} from
+    "../../../templates/tests/unit/Interfaces/IEverClearSpoke.sol";
 // Internal Dependencies
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
 
@@ -35,6 +36,10 @@ import {SafeERC20} from "@oz/token/ERC20/utils/SafeERC20.sol";
  *
  * @author  Inverter Network
  */
+interface IWETH {
+    function deposit() external payable;
+    function approve(address guy, uint wad) external returns (bool);
+}
 
 //TODO: Here's my guess of how we should do next
 // - Inherit from the PP_Template_v1 base and maybe even the interface too?
@@ -94,6 +99,8 @@ contract PP_BR_Connext_v1 is
     mapping(address => mapping(address => mapping(address => uint))) internal
         unclaimableAmountsForRecipient;
 
+    IEverclearSpoke public everClearSpoke;
+    IWETH public weth;
     /// @dev    Gap for possible future upgrades.
     uint[50] private __gap;
 
@@ -104,21 +111,26 @@ contract PP_BR_Connext_v1 is
     function init(
         IOrchestrator_v1 orchestrator_,
         Metadata memory metadata,
-        bytes memory /*configData*/
+        bytes memory configData
     ) external override(Module_v1) initializer {
         __Module_init(orchestrator_, metadata);
+
+        (address everClearSpokeAddress, address wethAddress) =
+            abi.decode(configData, (address, address));
+        everClearSpoke = IEverclearSpoke(everClearSpokeAddress);
+        weth = IWETH(wethAddress);
     }
 
     //--------------------------------------------------------------------------
     // IPaymentProcessor_v1 Functions
 
     /// @inheritdoc IPaymentProcessor_v1
-    function processPayments(IERC20PaymentClientBase_v1 client)
-        external
-        override(PP_CrossChain_v1)
-        onlyModule
-        validClient(address(client))
-    {}
+    // function processPayments(IERC20PaymentClientBase_v1 client)
+    //     external
+    //     override(PP_CrossChain_v1)
+    //     onlyModule
+    //     validClient(address(client))
+    // {}
 
     /// @inheritdoc IPaymentProcessor_v1
     function cancelRunningPayments(IERC20PaymentClientBase_v1 client)
@@ -230,5 +242,37 @@ contract PP_BR_Connext_v1 is
             )
         );
         return (success && data.length != 0 && _token.code.length != 0);
+    }
+
+    function _executeBridgeTransfer(
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) public payable virtual override returns (bytes memory) {
+        // Decode any additional parameters from executionData
+        (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
+
+        // Wrap ETH into WETH to send with the xcall
+        weth.deposit{value: msg.value}();
+
+        // This contract approves transfer to EverClearSpoke
+        weth.approve(address(everClearSpoke), order.amount);
+
+        // Create destinations array with the target chain
+        uint32[] memory destinations = new uint32[](1);
+        destinations[0] = 8453; // @note -> hardcoding the value as of now, need to create a new struct order.destinationChainId;
+
+        // Call newIntent on the EverClearSpoke contract
+        (bytes32 intentId,) = everClearSpoke.newIntent(
+            destinations,
+            order.recipient, // to
+            address(weth), // order.inputAsset, // inputAsset
+            address(weth), // order.outputAsset, // outputAsset (assuming same asset on destination)
+            order.amount, // amount
+            uint24(maxFee), // maxFee (cast to uint24)
+            uint48(ttl), // ttl (cast to uint48)
+            "" // empty data field, modify if needed
+        );
+
+        return abi.encodePacked(intentId);
     }
 }

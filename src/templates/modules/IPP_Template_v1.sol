@@ -70,5 +70,5 @@ interface IPP_CrossChain_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) external returns (bytes memory); //@note: The error says if declared in interface , it should be external only, need to check this
+    ) external payable returns (bytes memory); //@note: The error says if declared in interface , it should be external only, need to check this
 }
