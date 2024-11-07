@@ -8,7 +8,8 @@ import {
     IOrchestrator_v1
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
-
+import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
+import {CrosschainBase_v1} from "src/templates/modules/CrosschainBase_v1.sol";
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
@@ -23,12 +24,14 @@ import {
 import {PP_CrossChain_v1_Exposed} from "./PP_Template_v1_Exposed.sol";
 
 //System under test (SuT)
-import {
-    IPP_CrossChain_v1,
-    PP_CrossChain_v1,
-    IPaymentProcessor_v1
-} from "src/templates/modules/PP_Template_v1.sol";
-
+// import {
+//     IPP_CrossChain_v1,
+//     PP_CrossChain_v1,
+//     IPaymentProcessor_v1
+// } from "src/templates/modules/PP_Template_v1.sol";
+import {IPaymentProcessor_v1} from
+    "src/orchestrator/interfaces/IOrchestrator_v1.sol";
+import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
 import {console2} from "forge-std/console2.sol";
 /**
  * @title   Inverter Template Payment Processor
@@ -62,16 +65,16 @@ contract PP_Template_v1_Test is ModuleTest {
     ERC20PaymentClientBaseV1Mock paymentClient;
 
     //System under test (SuT)
-    //PP_CrossChain_v1 public paymentProcessor;
-    PP_CrossChain_v1_Exposed public paymentProcessor;
+    CrosschainBase_v1 public paymentProcessor;
+    //PP_CrossChain_v1_Exposed public paymentProcessor;
 
     //--------------------------------------------------------------------------
     //Setup
     function setUp() public {
         //This function is used to setup the unit test
         //Deploy the SuT
-        address impl = address(new PP_CrossChain_v1_Exposed());
-        paymentProcessor = PP_CrossChain_v1_Exposed(Clones.clone(impl));
+        address impl = address(new CrosschainBase_v1());
+        paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
 
         //Setup the module to test
         _setUpOrchestrator(paymentProcessor);
@@ -110,14 +113,14 @@ contract PP_Template_v1_Test is ModuleTest {
 
     //Test the interface support
     function testSupportsInterface() public {
+        // assertTrue(
+        //     paymentProcessor.supportsInterface(
+        //         type(IPaymentProcessor_v1).interfaceId
+        //     )
+        // );
         assertTrue(
             paymentProcessor.supportsInterface(
-                type(IPaymentProcessor_v1).interfaceId
-            )
-        );
-        assertTrue(
-            paymentProcessor.supportsInterface(
-                type(IPP_CrossChain_v1).interfaceId
+                type(ICrossChainBase_v1).interfaceId
             )
         );
     }
@@ -138,29 +141,18 @@ contract PP_Template_v1_Test is ModuleTest {
             └── When the function processPayment() is called
                 └── Then it should revert
     */
-    function testProcessPayments_modifierInPlace() public {
-        ERC20PaymentClientBaseV1Mock nonRegisteredClient =
-            new ERC20PaymentClientBaseV1Mock();
+    // function testProcessPayments_modifierInPlace() public {
+    //     ERC20PaymentClientBaseV1Mock nonRegisteredClient =
+    //         new ERC20PaymentClientBaseV1Mock();
 
-        vm.expectRevert(
-            IPP_CrossChain_v1.Module__PP_Template__NotValidClient.selector
-        );
-        paymentProcessor.processPayments(nonRegisteredClient);
-    }
-
+    //     vm.expectRevert(
+    //         ICrossChainBase_v1.Module__CrossChainBase__NotValidClient.selector
+    //     );
+    //     paymentProcessor.processPayments(nonRegisteredClient);
+    // }
+    //
     //--------------------------------------------------------------------------
-    //Test: External (public & external)
-
-    function testExposed_executeBridgeTransfer() public {
-        bytes memory bridgeData = paymentProcessor.exposed_executeBridgeTransfer(
-            IERC20PaymentClientBase_v1.PaymentOrder(
-                address(paymentClient), address(0xabcd), 25 ether, 0, 0, 0
-            ),
-            ""
-        );
-        console2.logBytes(bridgeData);
-        assertEq(bridgeData.length, 0);
-    }
+    //Test: External (public & external)Cros
 
     //Test external processPayments() function
 

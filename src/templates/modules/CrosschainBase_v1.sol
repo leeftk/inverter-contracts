@@ -7,9 +7,9 @@ import {IPaymentProcessor_v1} from "@pp/IPaymentProcessor_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {Module_v1} from "src/modules/base/Module_v1.sol";
-import {IPP_CrossChain_v1} from "./IPP_Template_v1.sol";
+//import {IPP_CrossChain_v1} from "./IPP_Template_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
-
+import {ICrossChainBase_v1} from "./ICrosschainBase_v1.sol";
 /**
  * @title   Inverter Template Payment Processor
  *
@@ -29,10 +29,8 @@ import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
  *
  * @author  Inverter Network
  */
-abstract contract CrossChain_Base_v1 is
-    ICrossChainBase_v1,
-    Module_v1
-{
+
+contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
@@ -49,7 +47,7 @@ abstract contract CrossChain_Base_v1 is
 
     /// @dev Mapping of payment ID to bridge transfer return data
     mapping(uint => bytes) internal _bridgeData;
-    
+
     bytes public executionData;
 
     /// @dev    Payout amount multiplier.
@@ -64,11 +62,6 @@ abstract contract CrossChain_Base_v1 is
     //--------------------------------------------------------------------------
     // Events
 
-    event BridgeTransferExecuted(
-        uint indexed paymentId,
-        bytes indexed bridgeData
-    );
-
     //--------------------------------------------------------------------------
     // Virtual Functions
 
@@ -81,7 +74,14 @@ abstract contract CrossChain_Base_v1 is
         bytes memory executionData
     ) internal virtual returns (bytes memory) {
         return bytes("");
-        emit BridgeTransferExecuted(order.paymentId, executionData);
+        emit BridgeTransferExecuted(executionData);
     }
-}
 
+    function getChainId() external view returns (uint) {
+        return _chainId;
+    }
+
+    /// @notice Process payments for a given payment client
+    /// @param client The payment client to process payments for
+    function processPayments(IERC20PaymentClientBase_v1 client) external {}
+}
