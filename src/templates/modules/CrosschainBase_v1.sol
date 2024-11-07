@@ -62,6 +62,10 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     //--------------------------------------------------------------------------
     // Events
 
+    event PaymentProcessed(
+        uint indexed paymentId, address recipient, address token, uint amount
+    );
+
     //--------------------------------------------------------------------------
     // Virtual Functions
 
@@ -73,8 +77,8 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal virtual returns (bytes memory) {
-        return bytes("");
-        emit BridgeTransferExecuted(executionData);
+        // return bytes("");
+        // emit BridgeTransferExecuted(executionData);
     }
 
     function getChainId() external view returns (uint) {
@@ -83,5 +87,8 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
 
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for
-    function processPayments(IERC20PaymentClientBase_v1 client) external {}
+    function processPayments(IERC20PaymentClientBase_v1 client)
+        external
+        virtual
+    {}
 }

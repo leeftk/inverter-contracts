@@ -19,13 +19,39 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
     /// @dev Override this function to implement specific bridge logic
     /// @param order The payment order containing all necessary transfer details
     /// @return bridgeData Arbitrary data returned by the bridge implementation
-    function executeBridgeTransfer(
+    function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal returns (bytes memory) {
+    ) internal override returns (bytes memory) {
         //@notice call the connextBridgeLogic to execute the bridge transfer
         bytes32 intentId = connextBridgeLogic.xcall(order, executionData);
         return abi.encode(intentId);
+    }
+
+    function processPayments(IERC20PaymentClientBase_v1 client)
+        external
+        override
+    {
+        // Collect orders from the client
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
+        (orders,,) = client.collectPaymentOrders();
+
+        for (uint i = 0; i < orders.length; i++) {
+            bytes memory bridgeData =
+                _executeBridgeTransfer(orders[i], executionData);
+            _bridgeData[_paymentId] = bridgeData;
+
+            emit PaymentProcessed(
+                _paymentId,
+                orders[i].recipient,
+                orders[i].paymentToken,
+                orders[i].amount
+            );
+            _paymentId++;
+
+            // Inform the client about the processed amount
+            client.amountPaid(orders[i].paymentToken, orders[i].amount);
+        }
     }
 }
 
