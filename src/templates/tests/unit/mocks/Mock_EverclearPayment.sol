@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-interface IWETH {
-    function deposit() external payable;
-
-    function approve(address spender, uint amount) external returns (bool);
-}
-
 contract Mock_EverclearPayment {
     event IntentAdded(bytes32 intentId, uint queuePosition, Intent intent);
 

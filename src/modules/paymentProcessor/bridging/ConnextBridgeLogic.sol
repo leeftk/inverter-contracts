@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import {CrosschainBase_v1} from "src/templates/modules/CrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
+import {IERC20} from "@oz/token/ERC20/IERC20.sol";
 
 interface IEverclearSpoke {
     function newIntent(
@@ -18,13 +19,7 @@ interface IEverclearSpoke {
     ) external returns (bytes32 intentId, uint amountOut);
 }
 
-interface IWETH {
-    function deposit() external payable;
-
-    function approve(address spender, uint amount) external returns (bool);
-}
-
-abstract contract ConnextBridgeLogic is CrosschainBase_v1 {
+contract ConnextBridgeLogic is CrosschainBase_v1 {
     IEverclearSpoke public everClearSpoke;
     address public immutable weth;
 
@@ -41,10 +36,14 @@ abstract contract ConnextBridgeLogic is CrosschainBase_v1 {
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
 
         // Wrap ETH into WETH to send with the xcall
-        IWETH(weth).deposit{value: msg.value}();
+        IERC20(order.paymentToken).transferFrom(
+            msg.sender, address(this), order.amount
+        );
 
         // This contract approves transfer to EverClearSpoke
-        IWETH(weth).approve(address(everClearSpoke), order.amount);
+        IERC20(order.paymentToken).approve(
+            address(everClearSpoke), order.amount
+        );
 
         // Create destinations array with the target chain
         uint32[] memory destinations = new uint32[](1);
@@ -54,7 +53,7 @@ abstract contract ConnextBridgeLogic is CrosschainBase_v1 {
         (bytes32 intentId,) = everClearSpoke.newIntent(
             destinations,
             order.recipient, // to
-            address(weth), // inputAsset
+            order.paymentToken, // inputAsset
             address(weth), // outputAsset (assuming same asset on destination)
             order.amount, // amount
             uint24(maxFee), // maxFee (cast to uint24)

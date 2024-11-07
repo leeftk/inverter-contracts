@@ -7,7 +7,7 @@ import {CrosschainBase_v1} from "src/templates/modules/CrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
-abstract contract PP_CrossChain_v1_Exposed is CrosschainBase_v1 {
+contract PP_CrossChain_v1_Exposed is CrosschainBase_v1 {
     /// @notice Implementation of the bridge transfer logic using EverClear
     ///// @inheritdoc CrosschainBase_v1
     function exposed_executeBridgeTransfer(
