@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
-interface ICrossChain_Base_v1 {
+interface ICrossChainBase_v1 {
     //--------------------------------------------------------------------------
     // Structs
 
@@ -24,10 +24,7 @@ interface ICrossChain_Base_v1 {
     // Events
 
     /// @notice Emitted when a bridge transfer is executed
-    event BridgeTransferExecuted(
-        uint indexed paymentId,
-        bytes indexed bridgeData
-    );
+    event BridgeTransferExecuted(bytes indexed bridgeData);
 
     //--------------------------------------------------------------------------
     // Errors
@@ -53,5 +50,4 @@ interface ICrossChain_Base_v1 {
     /// @notice Get the chain ID
     /// @return The chain ID
     function getChainId() external view returns (uint);
-
 }
