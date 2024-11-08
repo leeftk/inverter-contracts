@@ -19,11 +19,11 @@ interface IEverclearSpoke {
     ) external returns (bytes32 intentId, uint amountOut);
 }
 
-contract ConnextBridgeLogic is CrosschainBase_v1 {
+contract ConnextBridgeLogic {
     IEverclearSpoke public everClearSpoke;
     address public immutable weth;
 
-    constructor(address _everclearSpoke, address _weth) CrosschainBase_v1() {
+    constructor(address _everclearSpoke, address _weth) {
         everClearSpoke = IEverclearSpoke(_everclearSpoke);
         weth = _weth;
     }
