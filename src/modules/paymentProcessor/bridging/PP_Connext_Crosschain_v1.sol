@@ -59,5 +59,3 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
         }
     }
 }
-
-// this is equivalent ot the forumal
