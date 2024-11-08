@@ -8,15 +8,13 @@ import {
     IOrchestrator_v1
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
-<<<<<<< HEAD
+
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {CrosschainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
-=======
-import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
-import {CrosschainBase_v1} from "src/templates/modules/CrosschainBase_v1.sol";
->>>>>>> 9954032 (fix merge conflicts)
+
+
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
@@ -27,7 +25,7 @@ import {
     ERC20PaymentClientBaseV1Mock,
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
-<<<<<<< HEAD
+
 
 // //import exposed
 // import {PP_CrossChain_v1_Exposed} from
@@ -44,21 +42,8 @@ import {
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 =======
-//import exposed
-import {PP_CrossChain_v1_Exposed} from
-    "../../tests/unit/PP_CrossChain_v1_Exposed.sol";
-
-//System under test (SuT)
-import {
-    PP_Connext_Crosschain_v1,
-    IPP_Connext_Crosschain_v1
-} from "../../../src/templates/modules/Connext_Bridge.sol";
-import {IPaymentProcessor_v1} from
-    "../../../src/orchestrator/interfaces/IOrchestrator_v1.sol";
-
-import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
-import {console2} from "forge-std/console2.sol";
->>>>>>> 9954032 (fix merge conflicts)
+    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
+>>>>>>> 4aec33f (fix file structure)
 /**
  * @title   Inverter Template Payment Processor
  *
@@ -82,28 +67,12 @@ import {console2} from "forge-std/console2.sol";
 contract PP_Connext_Bridge_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Constants
-<<<<<<< HEAD
-=======
-    uint internal constant _payoutAmountMultiplier = 2;
->>>>>>> 9954032 (fix merge conflicts)
 
     //--------------------------------------------------------------------------
     //State
 
-<<<<<<< HEAD
     //--------------------------------------------------------------------------
     //Mocks
-
-    //--------------------------------------------------------------------------
-    //Setup
-    function setUp() public {}
-=======
-    //Mocks
-    ERC20PaymentClientBaseV1Mock paymentClient;
-
-    //System under test (SuT)
-    CrosschainBase_v1 public paymentProcessor;
-    //PP_CrossChain_v1_Exposed public paymentProcessor;
 
     //--------------------------------------------------------------------------
     //Setup
@@ -137,21 +106,11 @@ contract PP_Connext_Bridge_Test is ModuleTest {
         paymentClient.setIsAuthorized(address(paymentProcessor), true);
         paymentClient.setToken(_token);
     }
->>>>>>> 9954032 (fix merge conflicts)
 
     //--------------------------------------------------------------------------
     //Test: Initialization
 
-    //Test if the orchestrator is correctly set
-<<<<<<< HEAD
-    function testInit() public override(ModuleTest) {}
 
-    //Test the interface support
-    function testSupportsInterface() public {}
-
-    //Test the reinit function
-    function testReinitFails() public override(ModuleTest) {}
-=======
     function testInit() public override(ModuleTest) {
         assertEq(
             address(paymentProcessor.orchestrator()), address(_orchestrator)
@@ -174,5 +133,5 @@ contract PP_Connext_Bridge_Test is ModuleTest {
             _orchestrator, _METADATA, abi.encode(_payoutAmountMultiplier)
         );
     }
->>>>>>> 9954032 (fix merge conflicts)
+
 }
