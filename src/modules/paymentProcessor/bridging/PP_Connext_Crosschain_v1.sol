@@ -59,6 +59,11 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
         external
         override
     {
+        // To encode maxFee and ttl:
+        uint maxFee = 0;
+        uint ttl = 0;
+        bytes memory executionData = abi.encode(maxFee, ttl);
+
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
