@@ -58,7 +58,6 @@ import {console2} from "forge-std/console2.sol";
 contract PP_Connext_Bridge_Test is ModuleTest {
     //--------------------------------------------------------------------------
     // //Constants
-    // uint internal constant _payoutAmountMultiplier = 2;
 
     // //--------------------------------------------------------------------------
     // //State

@@ -20,8 +20,7 @@ import {
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
 //import exposed
-import {PP_CrossChain_v1_Exposed} from
-    "../../tests/unit/PP_CrossChain_v1_Exposed.sol";
+import {PP_CrossChain_v1_Exposed} from "./PP_Crosschain_v1_Exposed.sol";
 
 // System under Test (SuT)
 import {
@@ -111,6 +110,11 @@ contract PP_Template_v1_Test is ModuleTest {
 
     //Test the interface support
     function testSupportsInterface() public {
+        // assertTrue(
+        //     paymentProcessor.supportsInterface(
+        //         type(IPaymentProcessor_v1).interfaceId
+        //     )
+        // );
         assertTrue(
             paymentProcessor.supportsInterface(
                 type(ICrossChainBase_v1).interfaceId
