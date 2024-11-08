@@ -11,9 +11,5 @@ import {IPaymentProcessor_v1} from
 import {IERC20} from "@oz/token/ERC20/IERC20.sol";
 
 interface IPP_Connext_Crosschain is IPaymentProcessor_v1 {
-   
-
-
-
-
+///Need to add the functions that are specific to Connext
 }

@@ -8,8 +8,10 @@ import {
     IOrchestrator_v1
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
-import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
-import {CrosschainBase_v1} from "src/templates/modules/CrosschainBase_v1.sol";
+import {ICrossChainBase_v1} from
+    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
+import {CrosschainBase_v1} from
+    "src/modules/paymentProcessor/abstract/CrosschainBase_v1.sol";
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
@@ -33,8 +35,8 @@ import {
 // import {IPaymentProcessor_v1} from
 //     "../../../src/orchestrator/interfaces/IOrchestrator_v1.sol";
 
-import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
-import {console2} from "forge-std/console2.sol";
+import {ICrossChainBase_v1} from
+    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
 /**
  * @title   Inverter Template Payment Processor
  *
