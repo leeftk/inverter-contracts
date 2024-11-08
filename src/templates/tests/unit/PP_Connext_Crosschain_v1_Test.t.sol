@@ -79,10 +79,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             address(everclearPaymentMock), address(token)
         );
         processor = new PP_Connext_Crosschain_v1(CHAIN_ID, address(bridgeLogic));
+        paymentClient.setIsAuthorized(address(processor), true);
 
         // Setup token approvals and initial balances
         token.mint(address(this), 1000 ether);
         token.approve(address(processor), type(uint).max);
+        token.approve(address(bridgeLogic), type(uint).max);
+
+        // Add these lines to ensure proper token flow
+        token.mint(address(processor), 1000 ether); // Mint tokens to processor
+        vm.prank(address(processor));
+        token.approve(address(bridgeLogic), type(uint).max); // Processor approves bridge logic
 
         // Setup mock payment orders that will be returned by the mock
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
