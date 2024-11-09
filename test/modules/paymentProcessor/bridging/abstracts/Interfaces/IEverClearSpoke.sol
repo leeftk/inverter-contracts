@@ -14,11 +14,11 @@ interface IEverclearSpoke {
         bytes32 receiver;
         bytes32 inputAsset;
         bytes32 outputAsset;
-        uint256 amount;
+        uint amount;
         uint24 maxFee;
         uint32 origin;
         uint32[] destinations;
-        uint256 nonce;
+        uint nonce;
         uint48 timestamp;
         uint48 ttl;
         bytes data;
@@ -33,8 +33,8 @@ interface IEverclearSpoke {
     }
 
     struct Permit2Params {
-        uint256 nonce;
-        uint256 deadline;
+        uint nonce;
+        uint deadline;
         bytes signature;
     }
 
@@ -60,7 +60,7 @@ interface IEverclearSpoke {
         address to,
         address inputAsset,
         address outputAsset,
-        uint256 amount,
+        uint amount,
         uint24 maxFee,
         uint48 ttl,
         bytes calldata data
@@ -70,17 +70,19 @@ interface IEverclearSpoke {
         address to,
         address inputAsset,
         address outputAsset,
-        uint256 amount,
+        uint amount,
         uint24 maxFee,
         uint48 ttl,
         bytes calldata data,
         Permit2Params calldata permit2Params
     ) external returns (bytes32 intentId, Intent memory intent);
-    function fillIntent(Intent calldata intent, uint24 fee) external returns (FillMessage memory fillMessage);
+    function fillIntent(Intent calldata intent, uint24 fee)
+        external
+        returns (FillMessage memory fillMessage);
     function fillIntentForSolver(
         address solver,
         Intent calldata intent,
-        uint256 nonce,
+        uint nonce,
         uint24 fee,
         bytes calldata signature
     ) external returns (FillMessage memory fillMessage);
@@ -90,25 +92,25 @@ interface IEverclearSpoke {
         uint32 domain,
         Intent[] calldata intents,
         address relayer,
-        uint256 ttl,
-        uint256 nonce,
-        uint256 bufferBPS,
+        uint ttl,
+        uint nonce,
+        uint bufferBPS,
         bytes calldata signature
     ) external;
     function processFillQueueViaRelayer(
         uint32 domain,
         uint32 amount,
         address relayer,
-        uint256 ttl,
-        uint256 nonce,
-        uint256 bufferBPS,
+        uint ttl,
+        uint nonce,
+        uint bufferBPS,
         bytes calldata signature
     ) external;
-    function deposit(address asset, uint256 amount) external;
-    function withdraw(address asset, uint256 amount) external;
+    function deposit(address asset, uint amount) external;
+    function withdraw(address asset, uint amount) external;
     function updateGateway(address newGateway) external;
     function updateMessageReceiver(address newMessageReceiver) external;
     function authorizeGasReceiver(address receiver, bool authorized) external;
-    function updateMessageGasLimit(uint256 newGasLimit) external;
+    function updateMessageGasLimit(uint newGasLimit) external;
     function executeIntentCalldata(Intent calldata intent) external;
 }

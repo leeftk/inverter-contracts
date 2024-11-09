@@ -9,9 +9,9 @@ import {
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/bridging/abstracts/ICrosschainBase_v1.sol";
 import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/abstract/CrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
@@ -36,7 +36,7 @@ import {
 //     "../../../src/orchestrator/interfaces/IOrchestrator_v1.sol";
 
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/bridging/abstracts/ICrosschainBase_v1.sol";
 /**
  * @title   Inverter Template Payment Processor
  *
