@@ -9,9 +9,9 @@ import {
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/bridging/abstracts/ICrosschainBase_v1.sol";
 import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/abstract/CrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
@@ -34,7 +34,7 @@ import {CrosschainBase_v1_Exposed} from "./CrosschainBase_v1_Exposed.sol";
 import {IPaymentProcessor_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/bridging/abstracts/ICrosschainBase_v1.sol";
 
 /**
  * @title   Inverter Template Payment Processor Tests
@@ -116,11 +116,6 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //Test the interface support
     function testSupportsInterface() public {
-        // assertTrue(
-        //     paymentProcessor.supportsInterface(
-        //         type(IPaymentProcessor_v1).interfaceId
-        //     )
-        // );
         assertTrue(
             paymentProcessor.supportsInterface(
                 type(ICrossChainBase_v1).interfaceId
@@ -148,13 +143,6 @@ contract CrosschainBase_v1_Test is ModuleTest {
                 └── Then it should revert
     */
     // function testProcessPayments_modifierInPlace() public {
-    //     ERC20PaymentClientBaseV1Mock nonRegisteredClient =
-    //         new ERC20PaymentClientBaseV1Mock();
-
-    //     vm.expectRevert(
-    //         ICrossChainBase_v1.Module__CrossChainBase__NotValidClient.selector
-    //     );
-    //     paymentProcessor.processPayments(nonRegisteredClient);
     // }
     //
     //--------------------------------------------------------------------------
@@ -184,38 +172,6 @@ contract CrosschainBase_v1_Test is ModuleTest {
     */
 
     //function testInternalSetPayoutAmountMultiplier_FailsGivenZero() public {
-    //    vm.expectRevert(
-    //        IPP_CrossChain_v1.Module__PP_CrossChain__InvalidAmount.selector
-    //    );
-    //    paymentProcessor.exposed_setPayoutAmountMultiplier(0);
-    //}
-
-    // function testInternalSetPayoutAmountMultiplier_FailsGivenZeroAfter(
-    //     uint newPayoutAmountMultiplier_
-    // ) public {
-    //     //Set up assumption
-    //     vm.assume(newPayoutAmountMultiplier_ > 0);
-
-    //     // Check initial state
-    //     assertEq(
-    //         paymentProcessor.getPayoutAmountMultiplier(),
-    //         _payoutAmountMultiplier
-    //     );
-
-    //     // Test internal function through mock exposed function
-    //     vm.expectEmit(true, true, true, true);
-    //     emit IPP_CrossChain_v1.NewPayoutAmountMultiplierSet(
-    //         _payoutAmountMultiplier, newPayoutAmountMultiplier_
-    //     );
-    //     paymentProcessor.exposed_setPayoutAmountMultiplier(
-    //         newPayoutAmountMultiplier_
-    //     );
-
-    //     // Test final state
-    //     assertEq(
-    //         paymentProcessor.getPayoutAmountMultiplier(),
-    //         newPayoutAmountMultiplier_
-    //     );
     // }
 
     //Test the internal _validPaymentReceiver() function

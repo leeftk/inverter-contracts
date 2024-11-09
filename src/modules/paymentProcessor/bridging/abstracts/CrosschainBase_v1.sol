@@ -77,8 +77,8 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal virtual returns (bytes memory) {
-        // return bytes("");
-        // emit BridgeTransferExecuted(executionData);
+        emit BridgeTransferExecuted(executionData);
+        return bytes("");
     }
 
     function getChainId() external view returns (uint) {
