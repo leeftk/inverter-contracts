@@ -29,6 +29,7 @@ import {
     IOrchestrator_v1
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
+import "forge-std/console2.sol";
 
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     PP_Connext_Crosschain_v1 public processor;
@@ -40,16 +41,19 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
     // Test addresses
     address public recipient = address(0x123);
-    uint public constant CHAIN_ID = 1;
+    uint public chainId;
 
     function setUp() public {
+        //Set the chainId
+        chainId = block.chainid;
+
         // Deploy token
         token = new ERC20Mock("Test Token", "TEST");
 
         // Deploy and setup mock payment client
         everclearPaymentMock = new Mock_EverclearPayment();
 
-        address impl = address(new CrosschainBase_v1());
+        address impl = address(new CrosschainBase_v1(chainId));
         paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
 
         //Setup the module to test
@@ -79,7 +83,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         bridgeLogic = new ConnextBridgeLogic(
             address(everclearPaymentMock), address(token)
         );
-        processor = new PP_Connext_Crosschain_v1(CHAIN_ID, address(bridgeLogic));
+        processor = new PP_Connext_Crosschain_v1(chainId, address(bridgeLogic));
         paymentClient.setIsAuthorized(address(processor), true);
 
         // Setup token approvals and initial balances
@@ -124,5 +128,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         processor.processPayments(client);
+    }
+
+    function test_getChainId() public {
+        assertEq(processor.getChainId(), chainId);
     }
 }
