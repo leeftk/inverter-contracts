@@ -10,10 +10,9 @@ import {
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
 import {CrosschainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
-
 
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
@@ -25,7 +24,6 @@ import {
     ERC20PaymentClientBaseV1Mock,
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
-
 
 // //import exposed
 // import {PP_CrossChain_v1_Exposed} from
@@ -40,10 +38,7 @@ import {
 //     "../../../src/orchestrator/interfaces/IOrchestrator_v1.sol";
 
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
-=======
     "src/modules/paymentProcessor/abstract/ICrosschainBase_v1.sol";
->>>>>>> 4aec33f (fix file structure)
 /**
  * @title   Inverter Template Payment Processor
  *
@@ -110,7 +105,6 @@ contract PP_Connext_Bridge_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Test: Initialization
 
-
     function testInit() public override(ModuleTest) {
         assertEq(
             address(paymentProcessor.orchestrator()), address(_orchestrator)
@@ -133,5 +127,4 @@ contract PP_Connext_Bridge_Test is ModuleTest {
             _orchestrator, _METADATA, abi.encode(_payoutAmountMultiplier)
         );
     }
-
 }

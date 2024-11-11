@@ -10,6 +10,7 @@ import {IERC20PaymentClientBase_v1} from
 contract CrosschainBase_v1_Exposed is CrosschainBase_v1 {
     /// @notice Implementation of the bridge transfer logic using EverClear
     ///// @inheritdoc CrosschainBase_v1
+
     function exposed_executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
