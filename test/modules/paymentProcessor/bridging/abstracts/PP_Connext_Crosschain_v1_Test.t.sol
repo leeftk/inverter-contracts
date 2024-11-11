@@ -122,7 +122,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
-        // Process payments
+        // Process payments and verify _bridgeData mapping is updated
         processor.processPayments(client);
         assertTrue(
             keccak256(processor.getBridgeData(0)) != keccak256(bytes("")),
@@ -148,7 +148,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
-        // Process payments
+        // Process payments and verify _bridgeData mapping is updated for each paymentId
         processor.processPayments(client);
         for (uint i = 0; i < setupRecipients.length; i++) {
             assertTrue(
@@ -158,7 +158,19 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         }
     }
 
+    function test_ProcessPayments_noPayments() public {
+        // Process payments and verify _bridgeData mapping is not updated
+        processor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient))
+        );
+        assertTrue(
+            keccak256(processor.getBridgeData(0)) == keccak256(bytes("")),
+            "Bridge data should be empty"
+        );
+    }
+
     function test_getChainId() public {
+        // Verify the chainId is correct
         assertEq(processor.getChainId(), chainId);
     }
 
