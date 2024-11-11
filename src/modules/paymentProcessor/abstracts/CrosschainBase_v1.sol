@@ -70,5 +70,30 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal virtual returns (bytes memory) {}
+    ) internal virtual returns (bytes memory) {
+        emit BridgeTransferExecuted(executionData);
+        return bytes("");
+    }
+
+    function getChainId() external view returns (uint) {
+        return _chainId;
+    }
+
+    /// @notice Process payments for a given payment client
+    /// @param client The payment client to process payments for
+    function processPayments(IERC20PaymentClientBase_v1 client)
+        external
+        virtual
+    {}
+
+    /// @notice Get the bridge data for a given payment ID
+    /// @param paymentId The ID of the payment to get the bridge data for
+    /// @return The bridge data for the given payment ID
+    function getBridgeData(uint paymentId)
+        external
+        view
+        returns (bytes memory)
+    {
+        return _bridgeData[paymentId];
+    }
 }
