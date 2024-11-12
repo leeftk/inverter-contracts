@@ -21,16 +21,17 @@ import {
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
 //import exposed
-import {PP_CrossChain_v1_Exposed} from "./PP_Template_v1_Exposed.sol";
+import {PP_CrossChain_v1_Exposed} from
+    "../../tests/unit/PP_CrossChain_v1_Exposed.sol";
 
 //System under test (SuT)
-// import {
-//     IPP_CrossChain_v1,
-//     PP_CrossChain_v1,
-//     IPaymentProcessor_v1
-// } from "src/templates/modules/PP_Template_v1.sol";
+import {
+    PP_Connext_Crosschain_v1,
+    IPP_Connext_Crosschain_v1
+} from "../../../src/templates/modules/Connext_Bridge.sol";
 import {IPaymentProcessor_v1} from
-    "src/orchestrator/interfaces/IOrchestrator_v1.sol";
+    "../../../src/orchestrator/interfaces/IOrchestrator_v1.sol";
+
 import {ICrossChainBase_v1} from "src/templates/modules/ICrosschainBase_v1.sol";
 import {console2} from "forge-std/console2.sol";
 /**
@@ -53,7 +54,7 @@ import {console2} from "forge-std/console2.sol";
  * @author  Inverter Network
  */
 
-contract PP_Template_v1_Test is ModuleTest {
+contract PP_Connext_Bridge_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Constants
     uint internal constant _payoutAmountMultiplier = 2;
@@ -113,11 +114,6 @@ contract PP_Template_v1_Test is ModuleTest {
 
     //Test the interface support
     function testSupportsInterface() public {
-        // assertTrue(
-        //     paymentProcessor.supportsInterface(
-        //         type(IPaymentProcessor_v1).interfaceId
-        //     )
-        // );
         assertTrue(
             paymentProcessor.supportsInterface(
                 type(ICrossChainBase_v1).interfaceId
@@ -132,90 +128,4 @@ contract PP_Template_v1_Test is ModuleTest {
             _orchestrator, _METADATA, abi.encode(_payoutAmountMultiplier)
         );
     }
-
-    //--------------------------------------------------------------------------
-    //Test: Modifiers
-
-    /* Test validClient modifier in place (extensive testing done through internal modifier functions)
-        └── Given the modifier is in place
-            └── When the function processPayment() is called
-                └── Then it should revert
-    */
-    // function testProcessPayments_modifierInPlace() public {
-    //     ERC20PaymentClientBaseV1Mock nonRegisteredClient =
-    //         new ERC20PaymentClientBaseV1Mock();
-
-    //     vm.expectRevert(
-    //         ICrossChainBase_v1.Module__CrossChainBase__NotValidClient.selector
-    //     );
-    //     paymentProcessor.processPayments(nonRegisteredClient);
-    // }
-    //
-    //--------------------------------------------------------------------------
-    //Test: External (public & external)Cros
-
-    //Test external processPayments() function
-
-    //Test external cancelRunningPayments() function
-
-    //Test external unclaimable() function
-
-    //Test external claimPreviouslyUnclaimable() function
-
-    //Test external validPaymentOrder() function
-
-    //--------------------------------------------------------------------------
-    //Test: Internal (tested through exposed_functions)
-
-    /*  test internal _setPayoutAmountMultiplier()
-        ├── Given the newPayoutAmount == 0
-        │   └── When the function _setPayoutAmountMultiplier() is called
-        │       └── Then it should revert
-        └── Given the newPayoutAmount != 0
-            └── When the function _setPayoutAmountMultiplier() is called
-                └── Then it should emit the event
-                    └── And it should set the state correctly
-    */
-
-    //function testInternalSetPayoutAmountMultiplier_FailsGivenZero() public {
-    //    vm.expectRevert(
-    //        IPP_CrossChain_v1.Module__PP_CrossChain__InvalidAmount.selector
-    //    );
-    //    paymentProcessor.exposed_setPayoutAmountMultiplier(0);
-    //}
-
-    // function testInternalSetPayoutAmountMultiplier_FailsGivenZeroAfter(
-    //     uint newPayoutAmountMultiplier_
-    // ) public {
-    //     //Set up assumption
-    //     vm.assume(newPayoutAmountMultiplier_ > 0);
-
-    //     // Check initial state
-    //     assertEq(
-    //         paymentProcessor.getPayoutAmountMultiplier(),
-    //         _payoutAmountMultiplier
-    //     );
-
-    //     // Test internal function through mock exposed function
-    //     vm.expectEmit(true, true, true, true);
-    //     emit IPP_CrossChain_v1.NewPayoutAmountMultiplierSet(
-    //         _payoutAmountMultiplier, newPayoutAmountMultiplier_
-    //     );
-    //     paymentProcessor.exposed_setPayoutAmountMultiplier(
-    //         newPayoutAmountMultiplier_
-    //     );
-
-    //     // Test final state
-    //     assertEq(
-    //         paymentProcessor.getPayoutAmountMultiplier(),
-    //         newPayoutAmountMultiplier_
-    //     );
-    // }
-
-    //Test the internal _validPaymentReceiver() function
-
-    //Test the internal _validClientModifier() function
-
-    //--------------------------------------------------------------------------
-    //Helper Functions
 }
