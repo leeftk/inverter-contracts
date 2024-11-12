@@ -10,13 +10,14 @@ import {PP_Connext_Crosschain_v1} from
     "src/modules/paymentProcessor/bridging/PP_Connext_Crosschain_v1.sol";
 import {ConnextBridgeLogic} from
     "src/modules/paymentProcessor/bridging/ConnextBridgeLogic.sol";
-import {CrosschainBase_v1} from "src/templates/modules/CrosschainBase_v1.sol";
+import {CrosschainBase_v1} from
+    "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
 // Tests and Mocks
 import {Mock_EverclearPayment} from
-    "src/templates/tests/unit/mocks/Mock_EverclearPayment.sol";
+    "test/modules/paymentProcessor/bridging/abstracts/mocks/Mock_EverclearPayment.sol";
 import {
     IERC20PaymentClientBase_v1,
     ERC20PaymentClientBaseV1Mock,
