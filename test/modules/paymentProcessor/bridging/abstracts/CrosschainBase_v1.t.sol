@@ -76,7 +76,7 @@ contract CrosschainBase_v1_Test is ModuleTest {
     function setUp() public {
         //This function is used to setup the unit test
         //Deploy the SuT
-        address impl = address(new CrosschainBase_v1());
+        address impl = address(new CrosschainBase_v1_Exposed());
         paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
 
         //Setup the module to test
