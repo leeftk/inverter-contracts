@@ -41,7 +41,6 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
         for (uint i = 0; i < orders.length; i++) {
             bytes memory bridgeData =
                 _executeBridgeTransfer(orders[i], executionData);
-            _bridgeData[_paymentId] = bridgeData;
 
             emit PaymentProcessed(
                 _paymentId,

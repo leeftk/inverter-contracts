@@ -30,7 +30,7 @@ import {ICrossChainBase_v1} from "./ICrosschainBase_v1.sol";
  * @author  Inverter Network
  */
 
-contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
+abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
@@ -44,9 +44,6 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     }
     //--------------------------------------------------------------------------
     // State
-
-    /// @dev Mapping of payment ID to bridge transfer return data
-    mapping(uint => bytes) internal _bridgeData;
 
     bytes public executionData;
 
@@ -77,7 +74,6 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal virtual returns (bytes memory) {
-        emit BridgeTransferExecuted(executionData);
         return bytes("");
     }
 
