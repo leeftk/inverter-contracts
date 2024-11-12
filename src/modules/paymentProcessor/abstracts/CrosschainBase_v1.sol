@@ -60,6 +60,10 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         _chainId = block.chainid;
     }
 
+    constructor(uint chainId_) {
+        //_chainId = chainId_;
+        _chainId = block.chainid;
+    }
     //--------------------------------------------------------------------------
     // Virtual Functions
 
