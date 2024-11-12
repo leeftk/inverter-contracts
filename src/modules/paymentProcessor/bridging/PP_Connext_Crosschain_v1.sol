@@ -12,7 +12,7 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
     ConnextBridgeLogic public connextBridgeLogic;
 
     constructor(uint chainId_, address connextBridgeLogic_)
-        CrosschainBase_v1()
+        CrosschainBase_v1(chainId_)
     {
         connextBridgeLogic = ConnextBridgeLogic(connextBridgeLogic_);
     }

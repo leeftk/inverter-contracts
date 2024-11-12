@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.8.20;
 
 // External Dependencies
@@ -40,16 +41,19 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
     // Test addresses
     address public recipient = address(0x123);
-    uint public constant CHAIN_ID = 1;
+    uint public chainId;
 
     function setUp() public {
+        // Set the chainId
+        chainId = block.chainid;
+
         // Deploy token
         token = new ERC20Mock("Test Token", "TEST");
 
         // Deploy and setup mock payment client
         everclearPaymentMock = new Mock_EverclearPayment();
 
-        address impl = address(new CrosschainBase_v1());
+        address impl = address(new CrosschainBase_v1(block.chainid));
         paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
 
         //Setup the module to test
@@ -79,7 +83,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         bridgeLogic = new ConnextBridgeLogic(
             address(everclearPaymentMock), address(token)
         );
-        processor = new PP_Connext_Crosschain_v1(CHAIN_ID, address(bridgeLogic));
+        processor = new PP_Connext_Crosschain_v1(chainId, address(bridgeLogic));
         paymentClient.setIsAuthorized(address(processor), true);
 
         // Setup token approvals and initial balances
@@ -91,19 +95,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         token.mint(address(processor), 1000 ether); // Mint tokens to processor
         vm.prank(address(processor));
         token.approve(address(bridgeLogic), type(uint).max); // Processor approves bridge logic
-
-        // Setup mock payment orders that will be returned by the mock
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            new IERC20PaymentClientBase_v1.PaymentOrder[](1);
-        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
-            recipient: recipient,
-            paymentToken: address(token),
-            amount: 100 ether,
-            start: block.timestamp,
-            cliff: 0,
-            end: block.timestamp + 1 days
-        });
-        paymentClient.addPaymentOrders(orders);
     }
 
     function testInit() public override(ModuleTest) {
@@ -117,12 +108,85 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
 
-    function test_ProcessPayments() public {
+    function test_getChainId() public {
+        assertEq(processor.getChainId(), chainId);
+    }
+
+    function test_ProcessPayments_singlePayment() public {
+        // Setup mock payment orders that will be returned by the mock
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 100 ether;
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        // Get the client interface
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+        // Process payments
+        processor.processPayments(client);
+        assertTrue(
+            keccak256(processor.getBridgeData(0)) != keccak256(bytes("")),
+            "Bridge data should not be empty"
+        );
+    }
+
+    function test_ProcessPayments_multiplePayment() public {
+        // Setup mock payment orders that will be returned by the mock
+        address[] memory setupRecipients = new address[](3);
+        setupRecipients[0] = address(0x1);
+        setupRecipients[1] = address(0x2);
+        setupRecipients[2] = address(0x3);
+        uint[] memory setupAmounts = new uint[](3);
+        setupAmounts[0] = 100 ether;
+        setupAmounts[1] = 125 ether;
+        setupAmounts[2] = 150 ether;
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(3, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
         // Process payments
         processor.processPayments(client);
+        for (uint i = 0; i < setupRecipients.length; i++) {
+            assertTrue(
+                keccak256(processor.getBridgeData(i)) != keccak256(bytes("")),
+                "Bridge data should not be empty"
+            );
+        }
+    }
+
+    // Helper functions
+    function _createPaymentOrders(
+        uint orderCount,
+        address[] memory recipients,
+        uint[] memory amounts
+    )
+        internal
+        view
+        returns (IERC20PaymentClientBase_v1.PaymentOrder[] memory)
+    {
+        // Sanity checks for array lengths
+        require(
+            recipients.length == orderCount && amounts.length == orderCount,
+            "Array lengths must match orderCount"
+        );
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            new IERC20PaymentClientBase_v1.PaymentOrder[](orderCount);
+        for (uint i = 0; i < orderCount; i++) {
+            orders[i] = IERC20PaymentClientBase_v1.PaymentOrder({
+                recipient: recipients[i],
+                paymentToken: address(token),
+                amount: amounts[i],
+                start: block.timestamp,
+                cliff: 0,
+                end: block.timestamp + 1 days
+            });
+        }
+        return orders;
     }
 }
