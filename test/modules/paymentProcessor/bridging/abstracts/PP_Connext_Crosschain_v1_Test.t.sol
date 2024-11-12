@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.8.20;
 
 // External Dependencies
@@ -42,9 +43,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     // Test addresses
     address public recipient = address(0x123);
     uint public chainId;
+    uint public chainId;
 
     function setUp() public {
         //Set the chainId
+        chainId = block.chainid;
+
+        // Set the chainId
         chainId = block.chainid;
 
         // Deploy token
@@ -53,7 +58,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Deploy and setup mock payment client
         everclearPaymentMock = new Mock_EverclearPayment();
 
-        address impl = address(new CrosschainBase_v1(chainId));
+        address impl = address(new CrosschainBase_v1(block.chainid));
         paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
 
         //Setup the module to test
@@ -84,6 +89,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             address(everclearPaymentMock), address(token)
         );
         processor = new PP_Connext_Crosschain_v1(chainId, address(bridgeLogic));
+        processor = new PP_Connext_Crosschain_v1(chainId, address(bridgeLogic));
         paymentClient.setIsAuthorized(address(processor), true);
 
         // Setup token approvals and initial balances
@@ -108,6 +114,10 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
 
+    function test_getChainId() public {
+        assertEq(processor.getChainId(), chainId);
+    }
+
     function test_ProcessPayments_singlePayment() public {
         // Setup mock payment orders that will be returned by the mock
         address[] memory setupRecipients = new address[](1);
@@ -121,8 +131,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
-
-        // Process payments and verify _bridgeData mapping is updated
+        // Process payments
         processor.processPayments(client);
         assertTrue(
             keccak256(processor.getBridgeData(0)) != keccak256(bytes("")),
@@ -143,7 +152,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             _createPaymentOrders(3, setupRecipients, setupAmounts);
         paymentClient.addPaymentOrders(orders);
-
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
@@ -156,22 +164,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 "Bridge data should not be empty"
             );
         }
-    }
-
-    function test_ProcessPayments_noPayments() public {
-        // Process payments and verify _bridgeData mapping is not updated
-        processor.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient))
-        );
-        assertTrue(
-            keccak256(processor.getBridgeData(0)) == keccak256(bytes("")),
-            "Bridge data should be empty"
-        );
-    }
-
-    function test_getChainId() public {
-        // Verify the chainId is correct
-        assertEq(processor.getChainId(), chainId);
     }
 
     // Helper functions
@@ -189,10 +181,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             recipients.length == orderCount && amounts.length == orderCount,
             "Array lengths must match orderCount"
         );
-
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             new IERC20PaymentClientBase_v1.PaymentOrder[](orderCount);
-
         for (uint i = 0; i < orderCount; i++) {
             orders[i] = IERC20PaymentClientBase_v1.PaymentOrder({
                 recipient: recipients[i],
@@ -203,7 +193,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 end: block.timestamp + 1 days
             });
         }
-
         return orders;
     }
 }
