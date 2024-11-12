@@ -66,6 +66,10 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         uint indexed paymentId, address recipient, address token, uint amount
     );
 
+    constructor(uint chainId_) {
+        //_chainId = chainId_;
+        _chainId = block.chainid;
+    }
     //--------------------------------------------------------------------------
     // Virtual Functions
 
@@ -91,4 +95,15 @@ contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         external
         virtual
     {}
+
+    /// @notice Get the bridge data for a given payment ID
+    /// @param paymentId The ID of the payment to get the bridge data for
+    /// @return The bridge data for the given payment ID
+    function getBridgeData(uint paymentId)
+        external
+        view
+        returns (bytes memory)
+    {
+        return _bridgeData[paymentId];
+    }
 }
