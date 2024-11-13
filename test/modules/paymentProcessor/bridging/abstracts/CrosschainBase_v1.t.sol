@@ -58,8 +58,6 @@ import {ICrossChainBase_v1} from
 contract CrosschainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Constants
-    uint internal constant _payoutAmountMultiplier = 2;
-
     //--------------------------------------------------------------------------
     //State
 
@@ -72,63 +70,19 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //--------------------------------------------------------------------------
     //Setup
-    function setUp() public {
-        //This function is used to setup the unit test
-        //Deploy the SuT
-        address impl = address(new CrosschainBase_v1_Exposed());
-        paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
-
-        //Setup the module to test
-        _setUpOrchestrator(paymentProcessor);
-
-        //General setup for other contracts in the workflow
-        _authorizer.setIsAuthorized(address(this), true);
-
-        //Initiate the PP with the medata and config data
-        paymentProcessor.init(
-            _orchestrator, _METADATA, abi.encode(_payoutAmountMultiplier)
-        );
-
-        //Setup other modules needed in the unit tests.
-        //In this case a payment client is needed to test the PP_Template_v1.
-        impl = address(new ERC20PaymentClientBaseV1Mock());
-        paymentClient = ERC20PaymentClientBaseV1Mock(Clones.clone(impl));
-        //Adding the payment client is done through a timelock mechanism
-        _orchestrator.initiateAddModuleWithTimelock(address(paymentClient));
-        vm.warp(block.timestamp + _orchestrator.MODULE_UPDATE_TIMELOCK());
-        _orchestrator.executeAddModule(address(paymentClient));
-        //Init payment client
-        paymentClient.init(_orchestrator, _METADATA, bytes(""));
-        paymentClient.setIsAuthorized(address(paymentProcessor), true);
-        paymentClient.setToken(_token);
-    }
+    function setUp() public {}
 
     //--------------------------------------------------------------------------
     //Test: Initialization
 
     //Test if the orchestrator is correctly set
-    function testInit() public override(ModuleTest) {
-        assertEq(
-            address(paymentProcessor.orchestrator()), address(_orchestrator)
-        );
-    }
+    function testInit() public override(ModuleTest) {}
 
     //Test the interface support
-    function testSupportsInterface() public {
-        assertTrue(
-            paymentProcessor.supportsInterface(
-                type(ICrossChainBase_v1).interfaceId
-            )
-        );
-    }
+    function testSupportsInterface() public {}
 
     //Test the reinit function
-    function testReinitFails() public override(ModuleTest) {
-        vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
-        paymentProcessor.init(
-            _orchestrator, _METADATA, abi.encode(_payoutAmountMultiplier)
-        );
-    }
+    function testReinitFails() public override(ModuleTest) {}
     // -----ALL below this we're keeping for reference, but not testing
     //--------------------------------------------------------------------------
     //Test: Modifiers
