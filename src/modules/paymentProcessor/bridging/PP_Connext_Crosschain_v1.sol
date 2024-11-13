@@ -32,14 +32,9 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
-    constructor(
-        uint chainId_,
-        address connextBridgeLogic_,
-        address everClearSpoke_,
-        address weth_
-    ) CrosschainBase_v1() {
-        connextBridgeLogic = ConnextBridgeLogic(connextBridgeLogic_);
+    constructor(address everClearSpoke_, address weth_) {
         everClearSpoke = IEverclearSpoke(everClearSpoke_);
+        weth = IWETH(weth_);
     }
 
     /// @notice Execute the cross-chain bridge transfer

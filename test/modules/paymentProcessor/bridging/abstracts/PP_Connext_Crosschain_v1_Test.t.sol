@@ -12,6 +12,8 @@ import {ConnextBridgeLogic} from
     "src/modules/paymentProcessor/bridging/ConnextBridgeLogic.sol";
 import {CrosschainBase_v1} from
     "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
+import {CrosschainBase_v1_Exposed} from
+    "test/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1_Exposed.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
@@ -49,8 +51,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Deploy and setup mock payment client
         everclearPaymentMock = new Mock_EverclearPayment();
 
-        address impl = address(new CrosschainBase_v1());
-        paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
+        address impl = address(new CrosschainBase_v1_Exposed());
+        paymentProcessor = CrosschainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test
         _setUpOrchestrator(paymentProcessor);
@@ -79,7 +81,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         bridgeLogic = new ConnextBridgeLogic(
             address(everclearPaymentMock), address(token)
         );
-        processor = new PP_Connext_Crosschain_v1(CHAIN_ID, address(bridgeLogic));
+        processor = new PP_Connext_Crosschain_v1(
+            address(everclearPaymentMock), address(token)
+        );
         paymentClient.setIsAuthorized(address(processor), true);
 
         // Setup token approvals and initial balances
