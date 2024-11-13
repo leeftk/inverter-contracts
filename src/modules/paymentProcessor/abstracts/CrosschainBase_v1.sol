@@ -31,6 +31,10 @@ import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
  */
 
 abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
+    constructor(uint chainId_) {
+        _chainId = block.chainid;
+    }
+
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
@@ -55,15 +59,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         uint indexed paymentId, address recipient, address token, uint amount
     );
 
-    constructor(uint chainId_) {
-        //_chainId = chainId_;
-        _chainId = block.chainid;
-    }
-
-    constructor(uint chainId_) {
-        //_chainId = chainId_;
-        _chainId = block.chainid;
-    }
     //--------------------------------------------------------------------------
     // Virtual Functions
 
