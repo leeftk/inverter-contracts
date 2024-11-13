@@ -32,14 +32,9 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
-    constructor(
-        uint chainId_,
-        address connextBridgeLogic_,
-        address everClearSpoke_,
-        address weth_
-    ) CrosschainBase_v1() {
-        connextBridgeLogic = ConnextBridgeLogic(connextBridgeLogic_);
+    constructor(address everClearSpoke_, address weth_) {
         everClearSpoke = IEverclearSpoke(everClearSpoke_);
+        weth = IWETH(weth_);
     }
 
     /// @notice Execute the cross-chain bridge transfer
@@ -59,6 +54,11 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
         external
         override
     {
+        // To encode maxFee and ttl:
+        uint maxFee = 0;
+        uint ttl = 0;
+        bytes memory executionData = abi.encode(maxFee, ttl);
+
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
