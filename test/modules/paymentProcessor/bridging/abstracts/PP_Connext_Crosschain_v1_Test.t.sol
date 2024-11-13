@@ -43,12 +43,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     // Test addresses
     address public recipient = address(0x123);
     uint public chainId;
-    uint public chainId;
 
     function setUp() public {
-        //Set the chainId
-        chainId = block.chainid;
-
         // Set the chainId
         chainId = block.chainid;
 
