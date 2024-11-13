@@ -44,6 +44,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     address public recipient = address(0x123);
     uint public chainId;
 
+    // Add this event definition at the contract level
+    event PaymentProcessed(
+        uint indexed paymentId,
+        address recipient,
+        address paymentToken,
+        uint amount
+    );
+
     function setUp() public {
         // Set the chainId
         chainId = block.chainid;
@@ -127,13 +135,18 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
-        // Process payments and verify _bridgeData mapping is updated
-        // Process payments and verify _bridgeData mapping is updated for each paymentId
-        processor.processPayments(client);
-        assertTrue(
-            keccak256(processor.getBridgeData(0)) != keccak256(bytes("")),
-            "Bridge data should not be empty"
+
+        // Expect the event
+        vm.expectEmit(true, true, true, true);
+        emit PaymentProcessed(
+            0, // paymentId
+            recipient,
+            address(token),
+            100 ether
         );
+
+        // Process payments
+        processor.processPayments(client);
     }
 
     function test_ProcessPayments_multiplePayment() public {
@@ -154,13 +167,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             IERC20PaymentClientBase_v1(address(paymentClient));
 
         // Process payments and verify _bridgeData mapping is updated for each paymentId
-        processor.processPayments(client);
+        // Expect the event
         for (uint i = 0; i < setupRecipients.length; i++) {
-            assertTrue(
-                keccak256(processor.getBridgeData(i)) != keccak256(bytes("")),
-                "Bridge data should not be empty"
+            vm.expectEmit(true, true, true, true);
+            emit PaymentProcessed(
+                i, // paymentId
+                setupRecipients[i],
+                address(token),
+                setupAmounts[i]
             );
         }
+        processor.processPayments(client);
     }
 
     function test_ProcessPayments_noPayments() public {
@@ -168,6 +185,38 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         processor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient))
         );
+        assertTrue(
+            keccak256(processor.getBridgeData(0)) == keccak256(bytes("")),
+            "Bridge data should be empty"
+        );
+    }
+
+    function test_returnsCorrectBridgeData() public {
+        // Setup mock payment orders that will be returned by the mock
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 100 ether;
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        // Get the client interface
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+        // Process payments and verify _bridgeData mapping is updated
+        processor.processPayments(client);
+        assertTrue(
+            keccak256(processor.getBridgeData(0)) != keccak256(bytes("")),
+            "Bridge data should not be empty"
+        );
+    }
+
+    function test_returnsEmptyBridgeData() public {
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+        // Process payments and verify _bridgeData mapping is updated
+        processor.processPayments(client);
         assertTrue(
             keccak256(processor.getBridgeData(0)) == keccak256(bytes("")),
             "Bridge data should be empty"
