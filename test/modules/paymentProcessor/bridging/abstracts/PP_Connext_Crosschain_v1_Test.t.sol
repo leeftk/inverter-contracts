@@ -30,6 +30,8 @@ import {
     IOrchestrator_v1
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
+import {IERC20Errors} from "@oz/interfaces/draft-IERC6093.sol";
+
 import "forge-std/console2.sol";
 
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
@@ -221,6 +223,30 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             keccak256(processor.getBridgeData(0)) == keccak256(bytes("")),
             "Bridge data should be empty"
         );
+    }
+
+    function test_ProcessPayments_InsufficientBalance() public {
+        // Setup payment order with amount larger than processor's balance
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 2000 ether; // More than the 1000 ether minted in setup
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientBalance.selector,
+                address(processor),
+                token.balanceOf(address(processor)),
+                setupAmounts[0]
+            )
+        );
+        processor.processPayments(client);
     }
 
     // Helper functions
