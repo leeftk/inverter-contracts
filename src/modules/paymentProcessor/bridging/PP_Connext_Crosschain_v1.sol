@@ -4,10 +4,11 @@ import {CrosschainBase_v1} from
     "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/bridging/abstracts/ICrosschainBase_v1.sol";
-import {ConnextBridgeLogic} from "./ConnextBridgeLogic.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {PP_Crosschain_v1} from
+    "src/modules/paymentProcessor/bridging/abstracts/PP_Crosschain_v1.sol";
 
 interface IEverclearSpoke {
     function newIntent(
@@ -27,8 +28,7 @@ interface IWETH {
     function withdraw(uint amount) external;
 }
 
-contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
-    ConnextBridgeLogic public connextBridgeLogic;
+contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
@@ -38,8 +38,8 @@ contract PP_Connext_Crosschain_v1 is CrosschainBase_v1 {
         address everClearSpoke_,
         address weth_
     ) CrosschainBase_v1() {
-        connextBridgeLogic = ConnextBridgeLogic(connextBridgeLogic_);
         everClearSpoke = IEverclearSpoke(everClearSpoke_);
+        weth = IWETH(weth_);
     }
 
     /// @notice Execute the cross-chain bridge transfer
