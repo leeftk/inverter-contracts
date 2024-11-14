@@ -45,8 +45,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     //--------------------------------------------------------------------------
     // State
 
-    bytes public executionData;
-
     /// @dev    Payout amount multiplier.
     uint internal _payoutAmountMultiplier;
 
@@ -77,7 +75,7 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         return bytes("");
     }
 
-    function getChainId() external view returns (uint) {
+    function getChainId() external view virtual returns (uint) {
         return _chainId;
     }
 
