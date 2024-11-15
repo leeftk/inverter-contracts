@@ -9,7 +9,7 @@ import {IERC20PaymentClientBase_v1} from
 import {Module_v1} from "src/modules/base/Module_v1.sol";
 //import {IPP_CrossChain_v1} from "./IPP_Template_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
-import {ICrossChainBase_v1} from "./ICrosschainBase_v1.sol";
+import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
 /**
  * @title   Inverter Template Payment Processor
  *
@@ -69,11 +69,4 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal virtual returns (bytes memory) {}
-
-    /// @notice Process payments for a given payment client
-    /// @param client The payment client to process payments for
-    function processPayments(IERC20PaymentClientBase_v1 client)
-        external
-        virtual
-    {}
 }

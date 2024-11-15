@@ -1,43 +1,37 @@
 pragma solidity ^0.8.20;
 
 import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
 import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/bridging/abstracts/ICrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@oz/token/ERC20/IERC20.sol";
 import {PP_Crosschain_v1} from
-    "src/modules/paymentProcessor/bridging/abstracts/PP_Crosschain_v1.sol";
-
-interface IEverclearSpoke {
-    function newIntent(
-        uint32[] memory destinations,
-        address to,
-        address inputAsset,
-        address outputAsset,
-        uint amount,
-        uint24 maxFee,
-        uint48 ttl,
-        bytes memory data
-    ) external returns (bytes32 intentId, uint amountOut);
-}
-
-interface IWETH {
-    function deposit() external payable;
-    function withdraw(uint amount) external;
-}
+    "src/modules/paymentProcessor/abstracts/PP_Crosschain_v1.sol";
+import {IWETH} from "src/modules/paymentProcessor/interfaces/IWETH.sol";
+import {IEverclearSpoke} from
+    "src/modules/paymentProcessor/interfaces/IEverclear.sol";
+import {IOrchestrator_v1} from
+    "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 
 contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
-    constructor(
-        uint chainId_,
-        address connextBridgeLogic_,
-        address everClearSpoke_,
-        address weth_
-    ) CrosschainBase_v1() {
+    function init(
+        IOrchestrator_v1 orchestrator_,
+        Metadata memory metadata,
+        bytes memory configData
+    ) external override initializer {
+        __Module_init(orchestrator_, metadata);
+        (
+            uint chainId_,
+            address connextBridgeLogic_,
+            address everClearSpoke_,
+            address weth_
+        ) = abi.decode(configData, (uint, address, address, address));
+
         everClearSpoke = IEverclearSpoke(everClearSpoke_);
         weth = IWETH(weth_);
     }

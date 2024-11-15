@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 // Internal Dependencies
 //import {PP_CrossChain_v1} from "src/templates/modules/PP_Template_v1.sol";
 import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1.sol";
+    "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 

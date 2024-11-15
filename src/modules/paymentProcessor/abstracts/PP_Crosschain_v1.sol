@@ -20,7 +20,7 @@ import {ERC20} from "@oz/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@oz/token/ERC20/utils/SafeERC20.sol";
 
 // Internal Interfaces
-import {IPP_Crosschain_v1} from "./IPP_Crosschain_v1.sol";
+import {IPP_Crosschain_v1} from "../interfaces/IPP_Crosschain_v1.sol";
 
 /**
  * @title   Inverter Template Payment Processor
@@ -89,7 +89,7 @@ abstract contract PP_Crosschain_v1 is CrosschainBase_v1, IPP_Crosschain_v1 {
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
         virtual
-        override(CrosschainBase_v1, IPaymentProcessor_v1)
+        override(IPaymentProcessor_v1)
     {}
 
     /// @inheritdoc IPaymentProcessor_v1
