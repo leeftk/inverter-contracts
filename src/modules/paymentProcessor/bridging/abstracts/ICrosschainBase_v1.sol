@@ -46,8 +46,4 @@ interface ICrossChainBase_v1 {
 
     //--------------------------------------------------------------------------
     // Public (Getter)
-
-    /// @notice Get the chain ID
-    /// @return The chain ID
-    function getChainId() external view returns (uint);
 }

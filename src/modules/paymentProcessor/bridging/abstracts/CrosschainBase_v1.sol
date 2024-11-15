@@ -51,9 +51,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     /// @dev    The number of payment orders.
     uint internal _paymentId;
 
-    /// @dev    The chain id of the current chain.
-    uint internal _chainId;
-
     //--------------------------------------------------------------------------
     // Events
 
@@ -71,13 +68,7 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal virtual returns (bytes memory) {
-        return bytes("");
-    }
-
-    function getChainId() external view virtual returns (uint) {
-        return _chainId;
-    }
+    ) internal virtual returns (bytes memory) {}
 
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for

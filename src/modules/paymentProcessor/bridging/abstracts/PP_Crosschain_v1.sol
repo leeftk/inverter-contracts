@@ -84,10 +84,6 @@ abstract contract PP_Crosschain_v1 is CrosschainBase_v1, IPP_Crosschain_v1 {
     //--------------------------------------------------------------------------
     // Virtual Functions
 
-    function getChainId() external view override returns (uint) {
-        return _chainId;
-    }
-
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for
     function processPayments(IERC20PaymentClientBase_v1 client)
