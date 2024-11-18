@@ -45,9 +45,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     //--------------------------------------------------------------------------
     // State
 
-    /// @dev    Payout amount multiplier.
-    uint internal _payoutAmountMultiplier;
-
     /// @dev    The number of payment orders.
     uint internal _paymentId;
 
