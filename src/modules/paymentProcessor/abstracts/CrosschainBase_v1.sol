@@ -45,11 +45,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     //--------------------------------------------------------------------------
     // State
 
-<<<<<<< HEAD
-    /// @dev    The number of payment orders.
-    uint internal _paymentId;
-
-=======
     /// @dev    Payout amount multiplier.
     uint internal _payoutAmountMultiplier;
 
@@ -66,7 +61,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     //--------------------------------------------------------------------------
     // Virtual Functions
 
->>>>>>> 0cb0ee97 (seperate interfaces)
     /// @notice Execute the cross-chain bridge transfer
     /// @dev Override this function to implement specific bridge logic
     /// @param order The payment order containing all necessary transfer details
@@ -74,9 +68,5 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-<<<<<<< HEAD
-    ) internal virtual returns (bytes memory);
-=======
     ) internal virtual returns (bytes memory) {}
->>>>>>> 0cb0ee97 (seperate interfaces)
 }
