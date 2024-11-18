@@ -54,6 +54,15 @@ abstract contract PP_Crosschain_v1 is CrosschainBase_v1, IPP_Crosschain_v1 {
             || super.supportsInterface(interfaceId_);
     }
 
+    function init(IOrchestrator_v1 orchestrator_, Metadata memory metadata)
+        external
+        virtual
+        override(Module_v1)
+        initializer
+    {
+        __Module_init(orchestrator_, metadata);
+    }
+
     //--------------------------------------------------------------------------
     // Modifiers
 
@@ -89,7 +98,7 @@ abstract contract PP_Crosschain_v1 is CrosschainBase_v1, IPP_Crosschain_v1 {
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
         virtual
-        override(IPaymentProcessor_v1)
+        override(IPaymentProcessor_v1, CrosschainBase_v1)
     {}
 
     /// @inheritdoc IPaymentProcessor_v1

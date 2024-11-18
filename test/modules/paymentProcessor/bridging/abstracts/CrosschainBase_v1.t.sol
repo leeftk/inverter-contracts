@@ -74,7 +74,7 @@ contract CrosschainBase_v1_Test is ModuleTest {
     function setUp() public {
         //This function is used to setup the unit test
         //Deploy the SuT
-        address impl = address(new CrosschainBase_v1(block.chainid));
+        address impl = address(new CrosschainBase_v1_Exposed(block.chainid));
         paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
 
         //Setup the module to test
@@ -82,11 +82,6 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
         //General setup for other contracts in the workflow
         _authorizer.setIsAuthorized(address(this), true);
-
-        //Initiate the PP with the medata and config data
-        paymentProcessor.init(
-            _orchestrator, _METADATA, abi.encode(_payoutAmountMultiplier)
-        );
 
         //Setup other modules needed in the unit tests.
         //In this case a payment client is needed to test the PP_Template_v1.

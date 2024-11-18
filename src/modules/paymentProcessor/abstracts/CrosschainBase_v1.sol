@@ -31,11 +31,9 @@ import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
  */
 
 abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
-    constructor(uint chainId_) {
-        _chainId = block.chainid;
-    }
-
+    mapping(uint => bytes) internal _bridgeData;
     /// @inheritdoc ERC165Upgradeable
+
     function supportsInterface(bytes4 interfaceId_)
         public
         view
@@ -74,12 +72,15 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         return bytes("");
     }
 
-    function getChainId() external view returns (uint) {
-        return _chainId;
+    function init(IOrchestrator_v1 orchestrator_, Metadata memory metadata)
+        internal
+        initializer
+    {
+        __Module_init(orchestrator_, metadata);
     }
-
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for
+
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
         virtual

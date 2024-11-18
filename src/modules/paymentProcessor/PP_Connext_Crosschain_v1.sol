@@ -23,14 +23,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         IOrchestrator_v1 orchestrator_,
         Metadata memory metadata,
         bytes memory configData
-    ) external override initializer {
+    ) external override(PP_Crosschain_v1) initializer {
         __Module_init(orchestrator_, metadata);
-        (
-            uint chainId_,
-            address connextBridgeLogic_,
-            address everClearSpoke_,
-            address weth_
-        ) = abi.decode(configData, (uint, address, address, address));
+        (address everClearSpoke_, address weth_) =
+            abi.decode(configData, (address, address));
 
         everClearSpoke = IEverclearSpoke(everClearSpoke_);
         weth = IWETH(weth_);
@@ -80,7 +76,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     function xcall(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal returns (bytes32 intentId) {
+    ) internal returns (bytes32) {
         // Decode any additional parameters from executionData
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
 
@@ -101,13 +97,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         // Call newIntent on the EverClearSpoke contract
         (intentId,) = everClearSpoke.newIntent(
             destinations,
-            order.recipient, // to
-            order.paymentToken, // inputAsset
-            address(weth), // outputAsset (assuming same asset on destination)
-            order.amount, // amount
-            uint24(maxFee), // maxFee (cast to uint24)
-            uint48(ttl), // ttl (cast to uint48)
-            "" // empty data field, modify if needed
+            order.recipient,
+            order.paymentToken,
+            address(weth),
+            order.amount,
+            uint24(maxFee),
+            uint48(ttl),
+            ""
         );
 
         return intentId;
