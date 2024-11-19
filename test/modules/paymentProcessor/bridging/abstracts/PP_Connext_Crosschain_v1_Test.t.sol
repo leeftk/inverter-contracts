@@ -89,13 +89,18 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         _orchestrator.initiateAddModuleWithTimelock(address(paymentClient));
         vm.warp(block.timestamp + _orchestrator.MODULE_UPDATE_TIMELOCK());
         _orchestrator.executeAddModule(address(paymentClient));
+
         //Init payment client
         paymentClient.init(_orchestrator, _METADATA, bytes(""));
         paymentClient.setIsAuthorized(address(paymentProcessor), true);
+        paymentClient.setToken(token);
+        impl = address(new PP_Connext_Crosschain_v1());
+        crossChainManager = PP_Connext_Crosschain_v1(Clones.clone(impl));
+        // Setup mock addresses
+        mockConnextBridge = address(0x123456);
+        mockEverClearSpoke = address(everclearPaymentMock); // Using the existing mock
+        mockWeth = address(0x789012); // Or deploy a mock WETH contract if needed
 
-        paymentClient.setToken(_token);
-
-        crossChainManager = new PP_Connext_Crosschain_v1();
         //init the processor
         // Initialize with proper config data
         bytes memory configData = abi.encode(
@@ -109,22 +114,11 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Setup token approvals and initial balances
         token.mint(address(this), 1000 ether);
         token.approve(address(crossChainManager), type(uint).max);
-        token.approve(address(crossChainManager), type(uint).max);
 
         // Add these lines to ensure proper token flow
         token.mint(address(crossChainManager), 1000 ether); // Mint tokens to processor
         vm.prank(address(crossChainManager));
         token.approve(address(crossChainManager), type(uint).max); // Processor approves bridge logic
-
-        // Setup mock addresses
-        mockConnextBridge = address(0x123456);
-        mockEverClearSpoke = address(everclearPaymentMock); // Using the existing mock
-        mockWeth = address(0x789012); // Or deploy a mock WETH contract if needed
-
-        crossChainManager = new PP_Connext_Crosschain_v1();
-
-        crossChainManager.init(_orchestrator, _METADATA, configData);
-        paymentClient.setIsAuthorized(address(crossChainManager), true);
     }
 
     function testInit() public override(ModuleTest) {
@@ -258,7 +252,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IERC20Errors.ERC20InsufficientBalance.selector,
-                address(crossChainManager),
+                address(this),
                 token.balanceOf(address(crossChainManager)),
                 setupAmounts[0]
             )
