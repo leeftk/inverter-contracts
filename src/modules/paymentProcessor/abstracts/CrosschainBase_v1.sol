@@ -71,13 +71,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
         emit BridgeTransferExecuted(executionData);
         return bytes("");
     }
-
-    function init(IOrchestrator_v1 orchestrator_, Metadata memory metadata)
-        internal
-        initializer
-    {
-        __Module_init(orchestrator_, metadata);
-    }
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for
 

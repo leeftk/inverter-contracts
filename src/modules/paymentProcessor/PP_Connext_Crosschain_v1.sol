@@ -14,6 +14,7 @@ import {IEverclearSpoke} from
     "src/modules/paymentProcessor/interfaces/IEverclear.sol";
 import {IOrchestrator_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
+import {Module_v1} from "src/modules/base/Module_v1.sol";
 
 contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
@@ -23,7 +24,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         IOrchestrator_v1 orchestrator_,
         Metadata memory metadata,
         bytes memory configData
-    ) external override(PP_Crosschain_v1) initializer {
+    ) external override(Module_v1) initializer {
         __Module_init(orchestrator_, metadata);
         (address everClearSpoke_, address weth_) =
             abi.decode(configData, (address, address));
@@ -49,6 +50,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         external
         override
     {
+        uint maxFee = 0;
+        uint ttl = 0;
+        bytes memory executionData = abi.encode(maxFee, ttl);
+
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
@@ -57,6 +62,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             bytes memory bridgeData =
                 _executeBridgeTransfer(orders[i], executionData);
 
+            _bridgeData[i] = bridgeData;
             emit PaymentProcessed(
                 _paymentId,
                 orders[i].recipient,
