@@ -46,13 +46,12 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         return abi.encode(intentId);
     }
 
-    function processPayments(IERC20PaymentClientBase_v1 client)
-        external
-        override
-    {
-        uint maxFee = 0;
-        uint ttl = 0;
-        bytes memory executionData = abi.encode(maxFee, ttl);
+    function processPayments(
+        IERC20PaymentClientBase_v1 client,
+        bytes memory executionData
+    ) external {
+        //override {
+        //@33audits - how do we handle the processPayments function, since after adding the executionData, we dont need to override it!
 
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
