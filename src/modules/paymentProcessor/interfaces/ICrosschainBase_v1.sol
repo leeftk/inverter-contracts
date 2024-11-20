@@ -38,6 +38,9 @@ interface ICrossChainBase_v1 {
     /// @notice Message has already been executed
     error Module__CrossChainBase_MessageAlreadyExecuted();
 
+    /// @notice Invalid TTL provided
+    error Module__CrossChainBase_InvalidTTL();
+
     /// @notice Invalid chain ID provided
     error Module__CrossChainBase_InvalidChainId();
 

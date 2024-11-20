@@ -99,7 +99,8 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //--------------------------------------------------------------------------
     //Test: Initialization
-
+    //@zuhaib - we need some basic tests for the base, we just need to init it and
+    //make sure that the executeBridgeTransfer is correctly set and returns empty bytes
     //Test if the orchestrator is correctly set
     function testInit() public override(ModuleTest) {}
 
@@ -108,6 +109,7 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //Test the reinit function
     function testReinitFails() public override(ModuleTest) {}
+
     // -----ALL below this we're keeping for reference, but not testing
     //--------------------------------------------------------------------------
     //Test: Modifiers
