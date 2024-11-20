@@ -46,4 +46,10 @@ interface ICrossChainBase_v1 {
 
     /// @notice Message verification failed
     error Module__CrossChainBase_MessageVerificationFailed();
+
+    /// @notice Invalid execution data
+    error Module__CrossChainBase_InvalidExecutionData();
+
+    /// @notice Invalid recipient
+    error Module__CrossChainBase__InvalidRecipient();
 }
