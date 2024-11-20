@@ -260,7 +260,111 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client);
     }
 
+    //@zuhaib - let's add some tests for unhappy paths here
+    // testMaxFeeTooHigh()
+    // testInvalidTt()
+    // testInvavil
+    // Validate that these fuzz tests I wrote are actually helpful they may be redundant
+
+    function testFuzz_ProcessPayments_SinglePayment(
+        address fuzzRecipient,
+        uint96 amount // Using uint96 to avoid overflow issues
+    ) public {
+        // Assumptions
+        vm.assume(fuzzRecipient != address(0));
+        vm.assume(amount > 0 && amount < 1000 ether); // Keeping within our minted balance
+
+        // Setup
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = fuzzRecipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = amount;
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        // Expectations
+        vm.expectEmit(true, true, true, true);
+        emit PaymentProcessed(0, fuzzRecipient, address(token), amount);
+
+        // Action
+        crossChainManager.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient))
+        );
+    }
+
+    function testFuzz_ProcessPayments_MultiplePayments(
+        uint8 numPayments, // Using uint8 to keep the number of payments reasonable
+        uint96 baseAmount // Base amount that will be varied for each payment
+    ) public {
+        // Assumptions
+        vm.assume(numPayments > 0 && numPayments <= 10); // Limiting max payments
+        vm.assume(baseAmount > 0 && baseAmount < 100 ether); // Ensuring total won't exceed balance
+
+        // Setup
+        address[] memory setupRecipients = new address[](numPayments);
+        uint[] memory setupAmounts = new uint[](numPayments);
+
+        for (uint i = 0; i < numPayments; i++) {
+            setupRecipients[i] = address(uint160(i + 1)); // Creating unique addresses
+            setupAmounts[i] = baseAmount + (i * 1 ether); // Varying amounts
+        }
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(numPayments, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        // Expectations
+        for (uint i = 0; i < numPayments; i++) {
+            vm.expectEmit(true, true, true, true);
+            emit PaymentProcessed(
+                i, setupRecipients[i], address(token), setupAmounts[i]
+            );
+        }
+
+        // Action
+        crossChainManager.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient))
+        );
+    }
+
+    function testFuzz_ProcessPayments_EdgeCaseAmounts(uint96 amount) public {
+        // Assumptions
+        vm.assume(amount > 0 && amount <= 1000 ether);
+        vm.assume(recipient != address(0));
+
+        // Setup - Clear existing balance
+        uint currentBalance = token.balanceOf(address(crossChainManager));
+        if (currentBalance > 0) {
+            vm.prank(address(crossChainManager));
+            token.transfer(address(1), currentBalance);
+        }
+
+        // Setup - Mint exact amount needed
+        token.mint(address(crossChainManager), amount);
+
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = amount;
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        // Expectations
+        vm.expectEmit(true, true, true, true);
+        emit PaymentProcessed(0, recipient, address(token), amount);
+
+        // Action
+        crossChainManager.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient))
+        );
+    }
+
     // Helper functions
+
     function _createPaymentOrders(
         uint orderCount,
         address[] memory recipients,

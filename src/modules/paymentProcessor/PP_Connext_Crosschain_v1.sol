@@ -80,9 +80,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal returns (bytes32) {
-        // Decode any additional parameters from executionData
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
-
+        if (ttl == 0) {
+            revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
+        }
         // Wrap ETH into WETH to send with the xcall
         IERC20(order.paymentToken).transferFrom(
             msg.sender, address(this), order.amount
@@ -95,7 +96,9 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
 
         // Create destinations array with the target chain
         uint32[] memory destinations = new uint32[](1);
-        destinations[0] = 8453; // @note -> hardcode for now -> order.destinationChainId;
+        destinations[0] = 8453;
+        // @note -> hardcode for now -> order.destinationChainId when the
+        // new struct is created for us
 
         // Call newIntent on the EverClearSpoke contract
         (bytes32 intentId,) = everClearSpoke.newIntent(
