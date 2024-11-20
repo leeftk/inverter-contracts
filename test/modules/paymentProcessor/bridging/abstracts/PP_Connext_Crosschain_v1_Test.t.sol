@@ -61,10 +61,18 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     address public mockEverClearSpoke;
     address public mockWeth;
 
+    uint maxFee = 0;
+    uint ttl = 0;
+    bytes executionData;
+    bytes invalidExecutionData;
+
     function setUp() public {
         // Set the chainId
         chainId = block.chainid;
 
+        //Set the execution data
+        executionData = abi.encode(maxFee, ttl);
+        invalidExecutionData = abi.encode(address(0));
         // Deploy token
         token = new ERC20Mock("Test Token", "TEST");
 
@@ -151,7 +159,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
 
         // Process payments
-        crossChainManager.processPayments(client);
+        crossChainManager.processPayments(client, executionData);
     }
 
     function test_ProcessPayments_multiplePayment() public {
@@ -182,13 +190,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 setupAmounts[i]
             );
         }
-        crossChainManager.processPayments(client);
+        crossChainManager.processPayments(client, executionData);
     }
 
     function test_ProcessPayments_noPayments() public {
         // Process payments and verify _bridgeData mapping is not updated
         crossChainManager.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient))
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
         assertTrue(
             keccak256(crossChainManager.getBridgeData(0))
@@ -198,10 +206,33 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     function test_ProcessPayments_invalidExecutionData() public {
-        _setupSinglePayment(recipient, 100 ether);
+        // Setup mock payment orders that will be returned by the mock
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 100 ether;
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
+
+        // Process payments
+        vm.expectRevert();
+        crossChainManager.processPayments(client, invalidExecutionData);
+    }
+
+    function test_returnsCorrectBridgeData() public {
+        // Setup mock payment orders that will be returned by the mock
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 100 ether;
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
 
         // Process payments
         vm.expectRevert();
@@ -256,7 +287,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
         // Process payments and verify _bridgeData mapping is updated
-        crossChainManager.processPayments(client);
+        crossChainManager.processPayments(client, executionData);
         assertTrue(
             keccak256(crossChainManager.getBridgeData(0))
                 != keccak256(bytes("")),
@@ -268,7 +299,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
         // Process payments and verify _bridgeData mapping is updated
-        crossChainManager.processPayments(client);
+        crossChainManager.processPayments(client, executionData);
         assertTrue(
             keccak256(crossChainManager.getBridgeData(0))
                 == keccak256(bytes("")),
@@ -289,7 +320,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 2000 ether
             )
         );
-        crossChainManager.processPayments(client);
+        crossChainManager.processPayments(client, executionData);
     }
 
     //@zuhaib - let's add some tests for unhappy paths here
@@ -322,7 +353,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Action
         crossChainManager.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient))
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
     }
 
@@ -357,7 +388,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Action
         crossChainManager.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient))
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
     }
 
@@ -391,7 +422,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Action
         crossChainManager.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient))
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
     }
 
