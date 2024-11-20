@@ -16,6 +16,8 @@ import {CrosschainBase_v1_Exposed} from
     "test/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1_Exposed.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
+import {ICrossChainBase_v1} from
+    "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 
 // Tests and Mocks
 import {Mock_EverclearPayment} from
@@ -133,14 +135,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     function test_ProcessPayments_singlePayment() public {
-        // Setup mock payment orders that will be returned by the mock
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = 100 ether;
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+        _setupSinglePayment(recipient, 100 ether);
 
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
@@ -202,16 +197,61 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
-    function test_returnsCorrectBridgeData() public {
-        // Setup mock payment orders that will be returned by the mock
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = 100 ether;
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+    function test_ProcessPayments_invalidExecutionData() public {
+        _setupSinglePayment(recipient, 100 ether);
+        // Get the client interface
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
 
+        // Process payments
+        vm.expectRevert();
+        crossChainManager.processPayments(client, invalidExecutionData);
+    }
+
+    function test_ProcessPayments_emptyExecutionData() public {
+        _setupSinglePayment(recipient, 100 ether);
+
+        // Get the client interface
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+
+        // Process payments
+        vm.expectRevert(
+            ICrossChainBase_v1
+                .Module__CrossChainBase_InvalidExecutionData
+                .selector
+        );
+        crossChainManager.processPayments(client, bytes(""));
+    }
+
+    function test_ProcessPayments_invalidRecipient() public {
+        _setupSinglePayment(address(0), 100 ether);
+        // Get the client interface
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+
+        // Process payments
+        vm.expectRevert(
+            ICrossChainBase_v1.Module__CrossChainBase__InvalidRecipient.selector
+        );
+        crossChainManager.processPayments(client, executionData);
+    }
+
+    function test_ProcessPayments_invalidAmount() public {
+        _setupSinglePayment(recipient, 0);
+        // Get the client interface
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
+
+        // Process payments
+        vm.expectRevert(
+            ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount.selector
+        );
+        crossChainManager.processPayments(client, executionData);
+    }
+
+    function test_returnsCorrectBridgeData() public {
+        _setupSinglePayment(recipient, 100 ether);
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
@@ -237,15 +277,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     function test_ProcessPayments_InsufficientBalance() public {
-        // Setup payment order with amount larger than processor's balance
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = 2000 ether; // More than the 1000 ether minted in setup
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
-
+        _setupSinglePayment(recipient, 2000 ether);
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
@@ -254,7 +286,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 IERC20Errors.ERC20InsufficientBalance.selector,
                 address(this),
                 token.balanceOf(address(crossChainManager)),
-                setupAmounts[0]
+                2000 ether
             )
         );
         crossChainManager.processPayments(client);
@@ -364,6 +396,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     // Helper functions
+
+    function _setupSinglePayment(address _recipient, uint _amount) internal {
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = _recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = _amount;
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+    }
 
     function _createPaymentOrders(
         uint orderCount,

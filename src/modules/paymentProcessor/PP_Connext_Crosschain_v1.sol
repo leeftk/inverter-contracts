@@ -82,6 +82,24 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal returns (bytes32) {
+        // @zuhaib - lets add validation here for ttl in this function
+        // be sure to use the errors that were inherited from the base
+        // we can ust check that ttl is not 0
+        // What should we do here about maxFee?
+
+        if (executionData.length == 0) {
+            revert
+                ICrossChainBase_v1
+                .Module__CrossChainBase_InvalidExecutionData();
+        }
+
+        if (order.amount == 0) {
+            revert ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount();
+        }
+        if (order.recipient == address(0)) {
+            revert ICrossChainBase_v1.Module__CrossChainBase__InvalidRecipient();
+        }
+
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
         if (ttl == 0) {
             revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
