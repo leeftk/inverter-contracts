@@ -9,8 +9,11 @@ import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
 contract CrosschainBase_v1_Exposed is CrosschainBase_v1 {
+    constructor(uint chainId_) CrosschainBase_v1() {}
+
     /// @notice Implementation of the bridge transfer logic using EverClear
     ///// @inheritdoc CrosschainBase_v1
+
     function exposed_executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData

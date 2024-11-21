@@ -14,6 +14,7 @@ import {IEverclearSpoke} from
     "src/modules/paymentProcessor/interfaces/IEverclear.sol";
 import {IOrchestrator_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
+import {Module_v1} from "src/modules/base/Module_v1.sol";
 
 contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
@@ -23,14 +24,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         IOrchestrator_v1 orchestrator_,
         Metadata memory metadata,
         bytes memory configData
-    ) external override initializer {
+    ) external override(Module_v1) initializer {
         __Module_init(orchestrator_, metadata);
-        (
-            uint chainId_,
-            address connextBridgeLogic_,
-            address everClearSpoke_,
-            address weth_
-        ) = abi.decode(configData, (uint, address, address, address));
+        (address everClearSpoke_, address weth_) =
+            abi.decode(configData, (address, address));
 
         everClearSpoke = IEverclearSpoke(everClearSpoke_);
         weth = IWETH(weth_);
@@ -49,10 +46,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         return abi.encode(intentId);
     }
 
-    function processPayments(IERC20PaymentClientBase_v1 client)
-        external
-        override
-    {
+    function processPayments(
+        IERC20PaymentClientBase_v1 client,
+        bytes memory executionData
+    ) external {
+        //override {
+        //@33audits - how do we handle the processPayments function, since after adding the executionData, we dont need to override it!
+
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
@@ -61,6 +61,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             bytes memory bridgeData =
                 _executeBridgeTransfer(orders[i], executionData);
 
+            _bridgeData[i] = bridgeData;
             emit PaymentProcessed(
                 _paymentId,
                 orders[i].recipient,
@@ -77,10 +78,29 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     function xcall(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal returns (bytes32 intentId) {
-        // Decode any additional parameters from executionData
-        (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
+    ) internal returns (bytes32) {
+        // @zuhaib - lets add validation here for ttl in this function
+        // be sure to use the errors that were inherited from the base
+        // we can ust check that ttl is not 0
+        // What should we do here about maxFee?
 
+        if (executionData.length == 0) {
+            revert
+                ICrossChainBase_v1
+                .Module__CrossChainBase_InvalidExecutionData();
+        }
+
+        if (order.amount == 0) {
+            revert ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount();
+        }
+        if (order.recipient == address(0)) {
+            revert ICrossChainBase_v1.Module__CrossChainBase__InvalidRecipient();
+        }
+
+        (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
+        if (ttl == 0) {
+            revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
+        }
         // Wrap ETH into WETH to send with the xcall
         IERC20(order.paymentToken).transferFrom(
             msg.sender, address(this), order.amount
@@ -93,18 +113,20 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
 
         // Create destinations array with the target chain
         uint32[] memory destinations = new uint32[](1);
-        destinations[0] = 8453; // @note -> hardcode for now -> order.destinationChainId;
+        destinations[0] = 8453;
+        // @note -> hardcode for now -> order.destinationChainId when the
+        // new struct is created for us
 
         // Call newIntent on the EverClearSpoke contract
         (bytes32 intentId,) = everClearSpoke.newIntent(
             destinations,
-            order.recipient, // to
-            order.paymentToken, // inputAsset
-            address(weth), // outputAsset (assuming same asset on destination)
-            order.amount, // amount
-            uint24(maxFee), // maxFee (cast to uint24)
-            uint48(ttl), // ttl (cast to uint48)
-            "" // empty data field, modify if needed
+            order.recipient,
+            order.paymentToken,
+            address(weth),
+            order.amount,
+            uint24(maxFee),
+            uint48(ttl),
+            ""
         );
 
         return intentId;

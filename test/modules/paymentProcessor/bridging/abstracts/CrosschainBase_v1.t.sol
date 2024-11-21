@@ -70,11 +70,36 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //--------------------------------------------------------------------------
     //Setup
-    function setUp() public {}
+    function setUp() public {
+        //This function is used to setup the unit test
+        //Deploy the SuT
+        address impl = address(new CrosschainBase_v1_Exposed(block.chainid));
+        paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
+
+        //Setup the module to test
+        _setUpOrchestrator(paymentProcessor);
+
+        //General setup for other contracts in the workflow
+        _authorizer.setIsAuthorized(address(this), true);
+
+        //Setup other modules needed in the unit tests.
+        //In this case a payment client is needed to test the PP_Template_v1.
+        impl = address(new ERC20PaymentClientBaseV1Mock());
+        paymentClient = ERC20PaymentClientBaseV1Mock(Clones.clone(impl));
+        //Adding the payment client is done through a timelock mechanism
+        _orchestrator.initiateAddModuleWithTimelock(address(paymentClient));
+        vm.warp(block.timestamp + _orchestrator.MODULE_UPDATE_TIMELOCK());
+        _orchestrator.executeAddModule(address(paymentClient));
+        //Init payment client
+        paymentClient.init(_orchestrator, _METADATA, bytes(""));
+        paymentClient.setIsAuthorized(address(paymentProcessor), true);
+        paymentClient.setToken(_token);
+    }
 
     //--------------------------------------------------------------------------
     //Test: Initialization
-
+    //@zuhaib - we need some basic tests for the base, we just need to init it and
+    //make sure that the executeBridgeTransfer is correctly set and returns empty bytes
     //Test if the orchestrator is correctly set
     function testInit() public override(ModuleTest) {}
 
@@ -83,6 +108,7 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //Test the reinit function
     function testReinitFails() public override(ModuleTest) {}
+
     // -----ALL below this we're keeping for reference, but not testing
     //--------------------------------------------------------------------------
     //Test: Modifiers
