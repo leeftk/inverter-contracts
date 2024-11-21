@@ -62,7 +62,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     address public mockWeth;
 
     uint maxFee = 0;
-    uint ttl = 0;
+    uint ttl = 1;
     bytes executionData;
     bytes invalidExecutionData;
 
@@ -224,7 +224,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, invalidExecutionData);
     }
 
-    function test_returnsCorrectBridgeData() public {
+    function test_returnsCorrectBridgeDataRevert() public {
         // Setup mock payment orders that will be returned by the mock
         address[] memory setupRecipients = new address[](1);
         setupRecipients[0] = recipient;
@@ -233,6 +233,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             _createPaymentOrders(1, setupRecipients, setupAmounts);
         paymentClient.addPaymentOrders(orders);
+
+        IERC20PaymentClientBase_v1 client =
+            IERC20PaymentClientBase_v1(address(paymentClient));
 
         // Process payments
         vm.expectRevert();
