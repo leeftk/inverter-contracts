@@ -137,6 +137,23 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
+    function testSupportsInterface() public {
+        // Test for IModule_v1 interface
+        assertTrue(
+            crossChainManager.supportsInterface(type(IModule_v1).interfaceId)
+        );
+
+        // Test for ICrossChainBase_v1 interface
+        assertTrue(
+            crossChainManager.supportsInterface(
+                type(ICrossChainBase_v1).interfaceId
+            )
+        );
+
+        // Test for a non-supported interface (using a random interface ID)
+        assertFalse(crossChainManager.supportsInterface(0xffffffff));
+    }
+
     function testReinitFails() public override(ModuleTest) {
         vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
@@ -225,7 +242,15 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     function test_returnsCorrectBridgeDataRevert() public {
-        _setupSinglePayment(recipient, 100 ether);
+        // Setup mock payment orders that will be returned by the mock
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = recipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 100 ether;
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 

@@ -35,6 +35,7 @@ import {IPaymentProcessor_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
+import {OZErrors} from "test/utils/errors/OZErrors.sol";
 
 /**
  * @title   Inverter Template Payment Processor Tests
@@ -66,8 +67,8 @@ contract CrosschainBase_v1_Test is ModuleTest {
     ERC20PaymentClientBaseV1Mock paymentClient;
 
     //System under test (SuT)
-    CrosschainBase_v1 public paymentProcessor;
-    //PP_CrossChain_v1_Exposed public paymentProcessor;
+    //CrosschainBase_v1 public paymentProcessor;
+    CrosschainBase_v1_Exposed public paymentProcessor;
 
     //--------------------------------------------------------------------------
     //Setup
@@ -75,13 +76,16 @@ contract CrosschainBase_v1_Test is ModuleTest {
         //This function is used to setup the unit test
         //Deploy the SuT
         address impl = address(new CrosschainBase_v1_Exposed(block.chainid));
-        paymentProcessor = CrosschainBase_v1(Clones.clone(impl));
+        paymentProcessor = CrosschainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test
         _setUpOrchestrator(paymentProcessor);
 
         //General setup for other contracts in the workflow
         _authorizer.setIsAuthorized(address(this), true);
+
+        //Initiate the PP with the medata and config data
+        paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
 
         //Setup other modules needed in the unit tests.
         //In this case a payment client is needed to test the PP_Template_v1.
@@ -102,13 +106,47 @@ contract CrosschainBase_v1_Test is ModuleTest {
     //@zuhaib - we need some basic tests for the base, we just need to init it and
     //make sure that the executeBridgeTransfer is correctly set and returns empty bytes
     //Test if the orchestrator is correctly set
-    function testInit() public override(ModuleTest) {}
+    function testInit() public override(ModuleTest) {
+        assertEq(
+            address(paymentProcessor.orchestrator()), address(_orchestrator)
+        );
+    }
 
     //Test the interface support
-    function testSupportsInterface() public {}
+    function testSupportsInterface() public {
+        // Test for ICrossChainBase_v1 interface support
+        bytes4 interfaceId = type(ICrossChainBase_v1).interfaceId;
+        assertTrue(paymentProcessor.supportsInterface(interfaceId));
+
+        // Test for random interface ID (should return false)
+        bytes4 randomInterfaceId = bytes4(keccak256("random()"));
+        assertFalse(paymentProcessor.supportsInterface(randomInterfaceId));
+    }
 
     //Test the reinit function
-    function testReinitFails() public override(ModuleTest) {}
+    function testReinitFails() public override(ModuleTest) {
+        vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
+        paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
+    }
+
+    //Test executeBridgeTransfer returns empty bytes
+    function testExecuteBridgeTransfer() public {
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = address(1);
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = 100 ether;
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(1, setupRecipients, setupAmounts);
+        paymentClient.addPaymentOrders(orders);
+
+        bytes memory executionData = abi.encode(0, 0); //maxFee and ttl setup
+
+        bytes memory result = paymentProcessor.exposed_executeBridgeTransfer(
+            orders[0], executionData
+        );
+        assertEq(result, bytes(""));
+    }
 
     // -----ALL below this we're keeping for reference, but not testing
     //--------------------------------------------------------------------------
@@ -157,4 +195,33 @@ contract CrosschainBase_v1_Test is ModuleTest {
 
     //--------------------------------------------------------------------------
     //Helper Functions
+
+    function _createPaymentOrders(
+        uint orderCount,
+        address[] memory recipients,
+        uint[] memory amounts
+    )
+        internal
+        view
+        returns (IERC20PaymentClientBase_v1.PaymentOrder[] memory)
+    {
+        // Sanity checks for array lengths
+        require(
+            recipients.length == orderCount && amounts.length == orderCount,
+            "Array lengths must match orderCount"
+        );
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            new IERC20PaymentClientBase_v1.PaymentOrder[](orderCount);
+        for (uint i = 0; i < orderCount; i++) {
+            orders[i] = IERC20PaymentClientBase_v1.PaymentOrder({
+                recipient: recipients[i],
+                paymentToken: address(0xabcd),
+                amount: amounts[i],
+                start: block.timestamp,
+                cliff: 0,
+                end: block.timestamp + 1 days
+            });
+        }
+        return orders;
+    }
 }
