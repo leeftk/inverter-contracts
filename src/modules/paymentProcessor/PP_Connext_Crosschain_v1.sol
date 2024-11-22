@@ -83,7 +83,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     ) internal returns (bytes32) {
         // @zuhaib - lets add validation here for ttl in this function
         // be sure to use the errors that were inherited from the base
-        // we can ust check that ttl is not 0
+        // we can ust check that ttl is not 0 -> @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
         // What should we do here about maxFee?
 
         if (executionData.length == 0) {
@@ -100,9 +100,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         }
 
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
-        if (ttl == 0) {
-            revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
-        }
+        // if (ttl == 0) {
+        //     revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
+        // } @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
+
         // Wrap ETH into WETH to send with the xcall
         IERC20(order.paymentToken).transferFrom(
             msg.sender, address(this), order.amount

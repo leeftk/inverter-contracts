@@ -62,7 +62,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     address public mockWeth;
 
     uint maxFee = 0;
-    uint ttl = 1;
+    uint ttl = 0;
     bytes executionData;
     bytes invalidExecutionData;
 
@@ -225,15 +225,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     function test_returnsCorrectBridgeDataRevert() public {
-        // Setup mock payment orders that will be returned by the mock
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = 100 ether;
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
-
+        _setupSinglePayment(recipient, 100 ether);
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
@@ -296,6 +288,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 != keccak256(bytes("")),
             "Bridge data should not be empty"
         );
+
+        bytes32 intentId = bytes32(crossChainManager.getBridgeData(0));
+        assertEq(
+            uint(everclearPaymentMock.status(intentId)),
+            uint(Mock_EverclearPayment.IntentStatus.ADDED)
+        );
     }
 
     function test_returnsEmptyBridgeData() public {
@@ -329,7 +327,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     //@zuhaib - let's add some tests for unhappy paths here
     // testMaxFeeTooHigh()
     // testInvalidTt()
-    // testInvavil
+    // testInvavil @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
     // Validate that these fuzz tests I wrote are actually helpful they may be redundant
 
     function testFuzz_ProcessPayments_SinglePayment(
@@ -341,14 +339,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.assume(amount > 0 && amount < 1000 ether); // Keeping within our minted balance
 
         // Setup
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = fuzzRecipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = amount;
-
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+        _setupSinglePayment(fuzzRecipient, amount);
 
         // Expectations
         vm.expectEmit(true, true, true, true);
@@ -410,14 +401,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Setup - Mint exact amount needed
         token.mint(address(crossChainManager), amount);
 
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = amount;
-
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+        _setupSinglePayment(recipient, amount);
 
         // Expectations
         vm.expectEmit(true, true, true, true);
