@@ -179,26 +179,36 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, executionData);
     }
 
-    function test_ProcessPayments_multiplePayment() public {
-        // Setup mock payment orders that will be returned by the mock
-        address[] memory setupRecipients = new address[](3);
-        setupRecipients[0] = address(0x1);
-        setupRecipients[1] = address(0x2);
-        setupRecipients[2] = address(0x3);
-        uint[] memory setupAmounts = new uint[](3);
-        setupAmounts[0] = 100 ether;
-        setupAmounts[1] = 125 ether;
-        setupAmounts[2] = 150 ether;
+    function testFuzz_ProcessPayments_multiplePayment(
+        uint8 numRecipients,
+        address testRecipient,
+        uint96 baseAmount
+    ) public {
+        // Assumptions to keep the test manageable and within bounds
+        vm.assume(numRecipients > 0 && numRecipients <= type(uint8).max); // Limit array size
+        vm.assume(testRecipient != address(0));
+        vm.assume(baseAmount > 0 && baseAmount <= MINTED_SUPPLY / numRecipients); // Ensure total amount won't exceed MINTED_SUPPLY
+
+        // Setup mock payment orders
+        address[] memory setupRecipients = new address[](numRecipients);
+        uint[] memory setupAmounts = new uint[](numRecipients);
+
+        for (uint i = 0; i < numRecipients; i++) {
+            setupRecipients[i] = testRecipient;
+            setupAmounts[i] =
+                1 + (uint(keccak256(abi.encode(i, baseAmount))) % baseAmount);
+        }
+
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(3, setupRecipients, setupAmounts);
+            _createPaymentOrders(numRecipients, setupRecipients, setupAmounts);
         paymentClient.addPaymentOrders(orders);
+
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
-        // Process payments and verify _bridgeData mapping is updated for each paymentId
-        // Expect the event
-        for (uint i = 0; i < setupRecipients.length; i++) {
+        // Expect events for each payment
+        for (uint i = 0; i < numRecipients; i++) {
             vm.expectEmit(true, true, true, true);
             emit PaymentProcessed(
                 i, // paymentId
@@ -207,6 +217,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 setupAmounts[i]
             );
         }
+
+        // Process payments
         crossChainManager.processPayments(client, executionData);
     }
 
@@ -377,41 +389,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     // testInvalidTt()
     // testInvavil @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
     // Validate that these fuzz tests I wrote are actually helpful they may be redundant
-
-    function testFuzz_ProcessPayments_MultiplePayments(
-        uint8 numPayments, // Using uint8 to keep the number of payments reasonable
-        uint96 baseAmount // Base amount that will be varied for each payment
-    ) public {
-        // Assumptions
-        vm.assume(numPayments > 0 && numPayments <= 10); // Limiting max payments
-        vm.assume(baseAmount > 0 && baseAmount < 100 ether); // Ensuring total won't exceed balance
-
-        // Setup
-        address[] memory setupRecipients = new address[](numPayments);
-        uint[] memory setupAmounts = new uint[](numPayments);
-
-        for (uint i = 0; i < numPayments; i++) {
-            setupRecipients[i] = address(uint160(i + 1)); // Creating unique addresses
-            setupAmounts[i] = baseAmount + (i * 1 ether); // Varying amounts
-        }
-
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(numPayments, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
-
-        // Expectations
-        for (uint i = 0; i < numPayments; i++) {
-            vm.expectEmit(true, true, true, true);
-            emit PaymentProcessed(
-                i, setupRecipients[i], address(token), setupAmounts[i]
-            );
-        }
-
-        // Action
-        crossChainManager.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
-        );
-    }
 
     function testFuzz_ProcessPayments_EdgeCaseAmounts(
         address testRecipient,
