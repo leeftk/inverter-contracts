@@ -44,8 +44,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     ERC20PaymentClientBaseV1Mock paymentClient;
     CrosschainBase_v1 public paymentProcessor;
 
-    // Test addresses
-    address public recipient = address(0x123);
     uint public chainId;
 
     // Add this event definition at the contract level
@@ -65,6 +63,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     uint ttl = 0;
     bytes executionData;
     bytes invalidExecutionData;
+
+    uint constant MINTED_SUPPLY = 1000 ether;
 
     function setUp() public {
         // Set the chainId
@@ -122,11 +122,11 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentClient.setIsAuthorized(address(crossChainManager), true);
 
         // Setup token approvals and initial balances
-        token.mint(address(this), 1000 ether);
+        token.mint(address(this), MINTED_SUPPLY);
         token.approve(address(crossChainManager), type(uint).max);
 
         // Add these lines to ensure proper token flow
-        token.mint(address(crossChainManager), 1000 ether); // Mint tokens to processor
+        token.mint(address(crossChainManager), MINTED_SUPPLY); // Mint tokens to processor
         vm.prank(address(crossChainManager));
         token.approve(address(crossChainManager), type(uint).max); // Processor approves bridge logic
     }
@@ -159,8 +159,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
 
-    function test_ProcessPayments_singlePayment() public {
-        _setupSinglePayment(recipient, 100 ether);
+    function testFuzz_ProcessPayments_singlePayment(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+
+        _setupSinglePayment(testRecipient, testAmount);
 
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
@@ -170,9 +176,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectEmit(true, true, true, true);
         emit PaymentProcessed(
             0, // paymentId
-            recipient,
+            testRecipient,
             address(token),
-            100 ether
+            testAmount
         );
 
         // Process payments
@@ -222,15 +228,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
-    function test_ProcessPayments_invalidExecutionData() public {
-        // Setup mock payment orders that will be returned by the mock
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = 100 ether;
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+    function testFuzz_ProcessPayments_invalidExecutionData(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+
+        _setupSinglePayment(testRecipient, testAmount);
 
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
@@ -241,15 +246,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, invalidExecutionData);
     }
 
-    function test_returnsCorrectBridgeDataRevert() public {
-        // Setup mock payment orders that will be returned by the mock
-        address[] memory setupRecipients = new address[](1);
-        setupRecipients[0] = recipient;
-        uint[] memory setupAmounts = new uint[](1);
-        setupAmounts[0] = 100 ether;
-        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+    function testFuzz_returnsCorrectBridgeDataRevert(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+        _setupSinglePayment(testRecipient, testAmount);
 
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
@@ -259,8 +262,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, invalidExecutionData);
     }
 
-    function test_ProcessPayments_emptyExecutionData() public {
-        _setupSinglePayment(recipient, 100 ether);
+    function testFuzz_ProcessPayments_emptyExecutionData(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+
+        _setupSinglePayment(testRecipient, testAmount);
 
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
@@ -275,8 +284,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, bytes(""));
     }
 
-    function test_ProcessPayments_invalidRecipient() public {
-        _setupSinglePayment(address(0), 100 ether);
+    function testFuzz_ProcessPayments_invalidRecipient(uint testAmount)
+        public
+    {
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+
+        _setupSinglePayment(address(0), testAmount);
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
@@ -288,8 +301,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, executionData);
     }
 
-    function test_ProcessPayments_invalidAmount() public {
-        _setupSinglePayment(recipient, 0);
+    function testFuzz_ProcessPayments_invalidAmount(address testRecipient)
+        public
+    {
+        vm.assume(testRecipient != address(0));
+
+        _setupSinglePayment(testRecipient, 0);
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
@@ -301,8 +318,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.processPayments(client, executionData);
     }
 
-    function test_returnsCorrectBridgeData() public {
-        _setupSinglePayment(recipient, 100 ether);
+    function testFuzz_returnsCorrectBridgeData(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+
+        _setupSinglePayment(testRecipient, testAmount);
         // Get the client interface
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
@@ -333,8 +356,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
-    function test_ProcessPayments_InsufficientBalance() public {
-        _setupSinglePayment(recipient, 2000 ether);
+    function testFuzz_ProcessPayments_InsufficientBalance(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > MINTED_SUPPLY && testAmount <= type(uint96).max);
+
+        _setupSinglePayment(testRecipient, testAmount);
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
 
@@ -343,7 +372,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 IERC20Errors.ERC20InsufficientBalance.selector,
                 address(this),
                 token.balanceOf(address(crossChainManager)),
-                2000 ether
+                testAmount
             )
         );
         crossChainManager.processPayments(client, executionData);
@@ -354,27 +383,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     // testInvalidTt()
     // testInvavil @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
     // Validate that these fuzz tests I wrote are actually helpful they may be redundant
-
-    function testFuzz_ProcessPayments_SinglePayment(
-        address fuzzRecipient,
-        uint96 amount // Using uint96 to avoid overflow issues
-    ) public {
-        // Assumptions
-        vm.assume(fuzzRecipient != address(0));
-        vm.assume(amount > 0 && amount < 1000 ether); // Keeping within our minted balance
-
-        // Setup
-        _setupSinglePayment(fuzzRecipient, amount);
-
-        // Expectations
-        vm.expectEmit(true, true, true, true);
-        emit PaymentProcessed(0, fuzzRecipient, address(token), amount);
-
-        // Action
-        crossChainManager.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
-        );
-    }
 
     function testFuzz_ProcessPayments_MultiplePayments(
         uint8 numPayments, // Using uint8 to keep the number of payments reasonable
@@ -411,10 +419,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
-    function testFuzz_ProcessPayments_EdgeCaseAmounts(uint96 amount) public {
-        // Assumptions
-        vm.assume(amount > 0 && amount <= 1000 ether);
-        vm.assume(recipient != address(0));
+    function testFuzz_ProcessPayments_EdgeCaseAmounts(
+        address testRecipient,
+        uint96 testAmount
+    ) public {
+        vm.assume(testAmount > 0 && testAmount <= MINTED_SUPPLY);
+        // Assumption
+        vm.assume(testRecipient != address(0));
 
         // Setup - Clear existing balance
         uint currentBalance = token.balanceOf(address(crossChainManager));
@@ -424,13 +435,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         }
 
         // Setup - Mint exact amount needed
-        token.mint(address(crossChainManager), amount);
+        token.mint(address(crossChainManager), testAmount);
 
-        _setupSinglePayment(recipient, amount);
+        _setupSinglePayment(testRecipient, testAmount);
 
         // Expectations
         vm.expectEmit(true, true, true, true);
-        emit PaymentProcessed(0, recipient, address(token), amount);
+        emit PaymentProcessed(0, testRecipient, address(token), testAmount);
 
         // Action
         crossChainManager.processPayments(
