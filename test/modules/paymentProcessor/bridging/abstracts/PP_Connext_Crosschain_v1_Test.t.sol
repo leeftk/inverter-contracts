@@ -121,14 +121,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         crossChainManager.init(_orchestrator, _METADATA, configData);
         paymentClient.setIsAuthorized(address(crossChainManager), true);
 
-        // Setup token approvals and initial balances
-        token.mint(address(this), MINTED_SUPPLY);
-        token.approve(address(crossChainManager), type(uint).max);
-
-        // Add these lines to ensure proper token flow
-        token.mint(address(crossChainManager), MINTED_SUPPLY); // Mint tokens to processor
-        vm.prank(address(crossChainManager));
-        token.approve(address(crossChainManager), type(uint).max); // Processor approves bridge logic
+        // Call the new function for balances setup
+        _setupInitialBalances();
     }
 
     function testInit() public override(ModuleTest) {
@@ -489,5 +483,15 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             });
         }
         return orders;
+    }
+
+    function _setupInitialBalances() internal {
+        // Setup token approvals and initial balances
+        token.mint(address(this), MINTED_SUPPLY);
+        token.approve(address(crossChainManager), type(uint).max);
+
+        token.mint(address(crossChainManager), MINTED_SUPPLY); // Mint tokens to processor
+        vm.prank(address(crossChainManager));
+        token.approve(address(crossChainManager), type(uint).max); // Processor approves bridge logic
     }
 }
