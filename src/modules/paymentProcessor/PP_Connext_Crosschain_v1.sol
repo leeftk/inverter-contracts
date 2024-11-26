@@ -1,7 +1,7 @@
 pragma solidity ^0.8.20;
 
-import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
+import {CrossChainBase_v1} from
+    "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from

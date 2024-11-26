@@ -10,8 +10,8 @@ import {
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
-import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
+import {CrossChainBase_v1} from
+    "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
@@ -23,7 +23,7 @@ import {
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
 //import exposed
-import {CrosschainBase_v1_Exposed} from "./CrosschainBase_v1_Exposed.sol";
+import {CrossChainBase_v1_Exposed} from "./CrossChainBase_v1_Exposed.sol";
 
 //System under test (SuT)
 // import {
@@ -57,7 +57,7 @@ import {OZErrors} from "test/utils/errors/OZErrors.sol";
  *
  * @author  Inverter Network
  */
-contract CrosschainBase_v1_Test is ModuleTest {
+contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Constants
     //--------------------------------------------------------------------------
@@ -67,16 +67,16 @@ contract CrosschainBase_v1_Test is ModuleTest {
     ERC20PaymentClientBaseV1Mock paymentClient;
 
     //System under test (SuT)
-    //CrosschainBase_v1 public paymentProcessor;
-    CrosschainBase_v1_Exposed public paymentProcessor;
+    //CrossChainBase_v1 public paymentProcessor;
+    CrossChainBase_v1_Exposed public paymentProcessor;
 
     //--------------------------------------------------------------------------
     //Setup
     function setUp() public {
         //This function is used to setup the unit test
         //Deploy the SuT
-        address impl = address(new CrosschainBase_v1_Exposed(block.chainid));
-        paymentProcessor = CrosschainBase_v1_Exposed(Clones.clone(impl));
+        address impl = address(new CrossChainBase_v1_Exposed(block.chainid));
+        paymentProcessor = CrossChainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test
         _setUpOrchestrator(paymentProcessor);

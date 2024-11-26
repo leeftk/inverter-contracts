@@ -8,7 +8,7 @@ import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
 
-import {CrosschainBase_v1} from "./CrosschainBase_v1.sol";
+import {CrossChainBase_v1} from "./CrossChainBase_v1.sol";
 
 // External Interfaces
 import {IERC20} from "@oz/token/ERC20/IERC20.sol";
@@ -41,13 +41,13 @@ import {IPP_Crosschain_v1} from "../interfaces/IPP_Crosschain_v1.sol";
  *
  * @author  Inverter Network
  */
-abstract contract PP_Crosschain_v1 is CrosschainBase_v1, IPP_Crosschain_v1 {
+abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
         view
         virtual
-        override(CrosschainBase_v1)
+        override(CrossChainBase_v1)
         returns (bool)
     {
         return interfaceId_ == type(IPP_Crosschain_v1).interfaceId
@@ -89,7 +89,7 @@ abstract contract PP_Crosschain_v1 is CrosschainBase_v1, IPP_Crosschain_v1 {
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
         virtual
-        override(IPaymentProcessor_v1, CrosschainBase_v1)
+        override(IPaymentProcessor_v1, CrossChainBase_v1)
     {}
 
     /// @inheritdoc IPaymentProcessor_v1

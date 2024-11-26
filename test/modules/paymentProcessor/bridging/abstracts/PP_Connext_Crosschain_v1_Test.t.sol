@@ -10,10 +10,10 @@ import {Clones} from "@oz/proxy/Clones.sol";
 import {PP_Connext_Crosschain_v1} from
     "src/modules/paymentProcessor/PP_Connext_Crosschain_v1.sol";
 
-import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
-import {CrosschainBase_v1_Exposed} from
-    "test/modules/paymentProcessor/bridging/abstracts/CrosschainBase_v1_Exposed.sol";
+import {CrossChainBase_v1} from
+    "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
+import {CrossChainBase_v1_Exposed} from
+    "test/modules/paymentProcessor/bridging/abstracts/CrossChainBase_v1_Exposed.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {ICrossChainBase_v1} from
@@ -42,7 +42,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     Mock_EverclearPayment public everclearPaymentMock;
     ERC20Mock public token;
     ERC20PaymentClientBaseV1Mock paymentClient;
-    CrosschainBase_v1 public paymentProcessor;
+    CrossChainBase_v1 public paymentProcessor;
 
     uint public chainId;
 
@@ -79,8 +79,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Deploy and setup mock payment client
         everclearPaymentMock = new Mock_EverclearPayment();
 
-        address impl = address(new CrosschainBase_v1_Exposed(block.chainid));
-        paymentProcessor = CrosschainBase_v1_Exposed(Clones.clone(impl));
+        address impl = address(new CrossChainBase_v1_Exposed(block.chainid));
+        paymentProcessor = CrossChainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test
         _setUpOrchestrator(paymentProcessor);
