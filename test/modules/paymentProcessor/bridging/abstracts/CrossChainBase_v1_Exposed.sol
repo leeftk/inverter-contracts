@@ -9,8 +9,6 @@ import {IERC20PaymentClientBase_v1} from
 
 contract CrossChainBase_v1_Exposed is CrossChainBase_v1 {
     constructor(uint chainId_) CrossChainBase_v1() {}
-
-    /// @notice Implementation of the bridge transfer logic using EverClear
     ///// @inheritdoc CrossChainBase_v1
 
     function exposed_executeBridgeTransfer(

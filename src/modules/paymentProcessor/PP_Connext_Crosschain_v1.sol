@@ -16,10 +16,17 @@ import {IOrchestrator_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {Module_v1} from "src/modules/base/Module_v1.sol";
 
+/// @title PP_Connext_Crosschain_v1
+/// @notice Payment processor implementation for cross-chain payments using Connext
+/// @dev Extends PP_Crosschain_v1 to handle cross-chain token transfers
 contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
+    /// @notice Initializes the payment processor module
+    /// @param orchestrator_ The address of the orchestrator contract
+    /// @param metadata Module metadata
+    /// @param configData ABI encoded configuration data containing everClearSpoke and WETH addresses
     function init(
         IOrchestrator_v1 orchestrator_,
         Metadata memory metadata,
@@ -46,13 +53,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         return abi.encode(intentId);
     }
 
+    /// @notice Processes multiple payment orders through the bridge
+    /// @param client The payment client contract interface
+    /// @param executionData Additional data needed for execution (encoded maxFee and TTL)
     function processPayments(
         IERC20PaymentClientBase_v1 client,
         bytes memory executionData
     ) external {
-        //override {
-        //@33audits - how do we handle the processPayments function, since after adding the executionData, we dont need to override it!
-
         // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
@@ -77,15 +84,14 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         }
     }
 
+    /// @notice Executes a cross-chain transfer through the Connext bridge
+    /// @param order The payment order to be processed
+    /// @param executionData Encoded data containing maxFee and TTL for the transfer
+    /// @return intentId The unique identifier for the cross-chain transfer
     function xcall(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal returns (bytes32) {
-        // @zuhaib - lets add validation here for ttl in this function
-        // be sure to use the errors that were inherited from the base
-        // we can ust check that ttl is not 0 -> @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
-        // What should we do here about maxFee?
-
         if (executionData.length == 0) {
             revert
                 ICrossChainBase_v1
@@ -135,5 +141,15 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         return intentId;
     }
 
-    ///cancelling payments on connext??????
+    /// @notice Retrieves the bridge data for a specific payment ID
+    /// @param paymentId The unique identifier of the payment
+    /// @return The bridge data associated with the payment (encoded intentId)
+    function getBridgeData(uint paymentId)
+        external
+        view
+        override
+        returns (bytes memory)
+    {
+        return _bridgeData[paymentId];
+    }
 }
