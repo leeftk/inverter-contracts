@@ -15,45 +15,19 @@ import {CrossChainBase_v1} from
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
-//Tests and Mocks
-// import cr
 import {
     IERC20PaymentClientBase_v1,
     ERC20PaymentClientBaseV1Mock,
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
-//import exposed
 import {CrossChainBase_v1_Exposed} from "./CrossChainBase_v1_Exposed.sol";
 
-//System under test (SuT)
-// import {
-//     IPP_CrossChain_v1,
-//     PP_CrossChain_v1,
-//     IPaymentProcessor_v1
-// } from "src/templates/modules/PP_Template_v1.sol";
 import {IPaymentProcessor_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 
-/**
- * @title   CrossChainBase Test Suite
- *
- * @notice  Test suite for the CrossChainBase_v1 abstract contract
- *
- * @dev     Tests the core functionality of the CrossChainBase contract including:
- *          - Contract initialization and reinitialization protection
- *          - Interface support verification
- *          - Bridge transfer execution
- *          - Integration with the Inverter workflow through ModuleTest
- *
- * @custom:security-contact security@inverter.network
- *                          In case of any concerns or findings, please refer to our Security Policy
- *                          at security.inverter.network or email us directly!
- *
- * @author  Inverter Network
- */
 contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Constants
