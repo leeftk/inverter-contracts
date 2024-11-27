@@ -34,15 +34,15 @@ import {
 } from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 import {IERC20Errors} from "@oz/interfaces/draft-IERC6093.sol";
-
+import {IWETH} from "src/modules/paymentProcessor/interfaces/IWETH.sol";
 import "forge-std/console2.sol";
 
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
-    PP_Connext_Crosschain_v1 public crossChainManager;
+    PP_Connext_Crosschain_v1 public paymentProcessor;
     Mock_EverclearPayment public everclearPaymentMock;
     ERC20Mock public token;
     ERC20PaymentClientBaseV1Mock paymentClient;
-    CrossChainBase_v1 public paymentProcessor;
+    IWETH public weth;
 
     uint public chainId;
 
@@ -67,61 +67,44 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     uint constant MINTED_SUPPLY = 1000 ether;
 
     function setUp() public {
-        // Set the chainId
+        // Set chain ID for test environment
         chainId = block.chainid;
 
-        //Set the execution data
+        // Prepare execution data for bridge operations
         executionData = abi.encode(maxFee, ttl);
         invalidExecutionData = abi.encode(address(0));
-        // Deploy token
+
+        // Deploy test token
         token = new ERC20Mock("Test Token", "TEST");
 
-        // Deploy and setup mock payment client
+        // Deploy mock contracts and set addresses
         everclearPaymentMock = new Mock_EverclearPayment();
+        mockEverClearSpoke = address(everclearPaymentMock);
+        mockWeth = address(weth);
 
-        address impl = address(new CrossChainBase_v1_Exposed(block.chainid));
-        paymentProcessor = CrossChainBase_v1_Exposed(Clones.clone(impl));
+        // Deploy payment processor via clone
+        address impl = address(new PP_Connext_Crosschain_v1());
+        paymentProcessor = PP_Connext_Crosschain_v1(Clones.clone(impl));
 
-        //Setup the module to test
         _setUpOrchestrator(paymentProcessor);
-
-        //General setup for other contracts in the workflow
         _authorizer.setIsAuthorized(address(this), true);
 
-        //Initiate the PP with the medata and config data
-        paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
+        // Initialize payment processor with config
+        bytes memory configData = abi.encode(mockEverClearSpoke, mockWeth);
+        paymentProcessor.init(_orchestrator, _METADATA, configData);
 
-        //Setup other modules needed in the unit tests.
-        //In this case a payment client is needed to test the PP_Template_v1.
+        // Deploy and add payment client through timelock process
         impl = address(new ERC20PaymentClientBaseV1Mock());
         paymentClient = ERC20PaymentClientBaseV1Mock(Clones.clone(impl));
-        //Adding the payment client is done through a timelock mechanism
         _orchestrator.initiateAddModuleWithTimelock(address(paymentClient));
         vm.warp(block.timestamp + _orchestrator.MODULE_UPDATE_TIMELOCK());
         _orchestrator.executeAddModule(address(paymentClient));
 
-        //Init payment client
+        // Configure payment client
         paymentClient.init(_orchestrator, _METADATA, bytes(""));
         paymentClient.setIsAuthorized(address(paymentProcessor), true);
         paymentClient.setToken(token);
-        impl = address(new PP_Connext_Crosschain_v1());
-        crossChainManager = PP_Connext_Crosschain_v1(Clones.clone(impl));
-        // Setup mock addresses
-        mockConnextBridge = address(0x123456);
-        mockEverClearSpoke = address(everclearPaymentMock); // Using the existing mock
-        mockWeth = address(0x789012); // Or deploy a mock WETH contract if needed
 
-        //init the processor
-        // Initialize with proper config data
-        bytes memory configData = abi.encode(
-            address(mockEverClearSpoke), // address of your EverClear spoke contract
-            address(mockWeth) // address of your WETH contract
-        );
-
-        crossChainManager.init(_orchestrator, _METADATA, configData);
-        paymentClient.setIsAuthorized(address(crossChainManager), true);
-
-        // Call the new function for balances setup
         _setupInitialBalances();
     }
 
@@ -134,18 +117,18 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     function testSupportsInterface() public {
         // Test for IModule_v1 interface
         assertTrue(
-            crossChainManager.supportsInterface(type(IModule_v1).interfaceId)
+            paymentProcessor.supportsInterface(type(IModule_v1).interfaceId)
         );
 
         // Test for ICrossChainBase_v1 interface
         assertTrue(
-            crossChainManager.supportsInterface(
+            paymentProcessor.supportsInterface(
                 type(ICrossChainBase_v1).interfaceId
             )
         );
 
         // Test for a non-supported interface (using a random interface ID)
-        assertFalse(crossChainManager.supportsInterface(0xffffffff));
+        assertFalse(paymentProcessor.supportsInterface(0xffffffff));
     }
 
     function testReinitFails() public override(ModuleTest) {
@@ -176,7 +159,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
 
         // Process payments
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
     }
 
     function testFuzz_ProcessPayments_multiplePayment(
@@ -219,17 +202,16 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         }
 
         // Process payments
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
     }
 
     function test_ProcessPayments_noPayments() public {
         // Process payments and verify _bridgeData mapping is not updated
-        crossChainManager.processPayments(
+        paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
         assertTrue(
-            keccak256(crossChainManager.getBridgeData(0))
-                == keccak256(bytes("")),
+            keccak256(paymentProcessor.getBridgeData(0)) == keccak256(bytes("")),
             "Bridge data should be empty"
         );
     }
@@ -249,7 +231,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         vm.expectRevert();
-        crossChainManager.processPayments(client, invalidExecutionData);
+        paymentProcessor.processPayments(client, invalidExecutionData);
     }
 
     function testFuzz_returnsCorrectBridgeDataRevert(
@@ -265,7 +247,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         vm.expectRevert();
-        crossChainManager.processPayments(client, invalidExecutionData);
+        paymentProcessor.processPayments(client, invalidExecutionData);
     }
 
     function testFuzz_ProcessPayments_emptyExecutionData(
@@ -287,7 +269,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 .Module__CrossChainBase_InvalidExecutionData
                 .selector
         );
-        crossChainManager.processPayments(client, bytes(""));
+        paymentProcessor.processPayments(client, bytes(""));
     }
 
     function testFuzz_ProcessPayments_invalidRecipient(uint testAmount)
@@ -304,7 +286,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectRevert(
             ICrossChainBase_v1.Module__CrossChainBase__InvalidRecipient.selector
         );
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
     }
 
     function testFuzz_ProcessPayments_invalidAmount(address testRecipient)
@@ -321,7 +303,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectRevert(
             ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount.selector
         );
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
     }
 
     function testFuzz_returnsCorrectBridgeData(
@@ -336,14 +318,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
         // Process payments and verify _bridgeData mapping is updated
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
         assertTrue(
-            keccak256(crossChainManager.getBridgeData(0))
-                != keccak256(bytes("")),
+            keccak256(paymentProcessor.getBridgeData(0)) != keccak256(bytes("")),
             "Bridge data should not be empty"
         );
 
-        bytes32 intentId = bytes32(crossChainManager.getBridgeData(0));
+        bytes32 intentId = bytes32(paymentProcessor.getBridgeData(0));
         assertEq(
             uint(everclearPaymentMock.status(intentId)),
             uint(Mock_EverclearPayment.IntentStatus.ADDED)
@@ -354,10 +335,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
         // Process payments and verify _bridgeData mapping is updated
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
         assertTrue(
-            keccak256(crossChainManager.getBridgeData(0))
-                == keccak256(bytes("")),
+            keccak256(paymentProcessor.getBridgeData(0)) == keccak256(bytes("")),
             "Bridge data should be empty"
         );
     }
@@ -377,11 +357,11 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             abi.encodeWithSelector(
                 IERC20Errors.ERC20InsufficientBalance.selector,
                 address(this),
-                token.balanceOf(address(crossChainManager)),
+                token.balanceOf(address(paymentProcessor)),
                 testAmount
             )
         );
-        crossChainManager.processPayments(client, executionData);
+        paymentProcessor.processPayments(client, executionData);
     }
 
     //@zuhaib - let's add some tests for unhappy paths here
@@ -399,14 +379,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.assume(testRecipient != address(0));
 
         // Setup - Clear existing balance
-        uint currentBalance = token.balanceOf(address(crossChainManager));
+        uint currentBalance = token.balanceOf(address(paymentProcessor));
         if (currentBalance > 0) {
-            vm.prank(address(crossChainManager));
+            vm.prank(address(paymentProcessor));
             token.transfer(address(1), currentBalance);
         }
 
         // Setup - Mint exact amount needed
-        token.mint(address(crossChainManager), testAmount);
+        token.mint(address(paymentProcessor), testAmount);
 
         _setupSinglePayment(testRecipient, testAmount);
 
@@ -415,7 +395,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         emit PaymentProcessed(0, testRecipient, address(token), testAmount);
 
         // Action
-        crossChainManager.processPayments(
+        paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
     }
@@ -465,10 +445,10 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     function _setupInitialBalances() internal {
         // Setup token approvals and initial balances
         token.mint(address(this), MINTED_SUPPLY);
-        token.approve(address(crossChainManager), type(uint).max);
+        token.approve(address(paymentProcessor), type(uint).max);
 
-        token.mint(address(crossChainManager), MINTED_SUPPLY); // Mint tokens to processor
-        vm.prank(address(crossChainManager));
-        token.approve(address(crossChainManager), type(uint).max); // Processor approves bridge logic
+        token.mint(address(paymentProcessor), MINTED_SUPPLY); // Mint tokens to processor
+        vm.prank(address(paymentProcessor));
+        token.approve(address(paymentProcessor), type(uint).max); // Processor approves bridge logic
     }
 }

@@ -60,7 +60,7 @@ contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Mocks
     ERC20PaymentClientBaseV1Mock paymentClient;
-    CrossChainBase_v1_Exposed public paymentProcessor;
+    CrossChainBase_v1_Exposed public crossChainBase;
 
     //--------------------------------------------------------------------------
     //Setup
@@ -68,16 +68,16 @@ contract CrossChainBase_v1_Test is ModuleTest {
         //This function is used to setup the unit test
         //Deploy the SuT
         address impl = address(new CrossChainBase_v1_Exposed(block.chainid));
-        paymentProcessor = CrossChainBase_v1_Exposed(Clones.clone(impl));
+        crossChainBase = CrossChainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test
-        _setUpOrchestrator(paymentProcessor);
+        _setUpOrchestrator(crossChainBase);
 
         //General setup for other contracts in the workflow
         _authorizer.setIsAuthorized(address(this), true);
 
         //Initiate the PP with the medata and config data
-        paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
+        crossChainBase.init(_orchestrator, _METADATA, abi.encode(1));
 
         //Setup other modules needed in the unit tests.
         //In this case a payment client is needed to test the PP_Template_v1.
@@ -89,7 +89,7 @@ contract CrossChainBase_v1_Test is ModuleTest {
         _orchestrator.executeAddModule(address(paymentClient));
         //Init payment client
         paymentClient.init(_orchestrator, _METADATA, bytes(""));
-        paymentClient.setIsAuthorized(address(paymentProcessor), true);
+        paymentClient.setIsAuthorized(address(crossChainBase), true);
         paymentClient.setToken(_token);
     }
     /* Test CrossChainBase functionality
@@ -108,9 +108,7 @@ contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Test: Initialization
     function testInit() public override(ModuleTest) {
-        assertEq(
-            address(paymentProcessor.orchestrator()), address(_orchestrator)
-        );
+        assertEq(address(crossChainBase.orchestrator()), address(_orchestrator));
     }
 
     //--------------------------------------------------------------------------
@@ -118,17 +116,17 @@ contract CrossChainBase_v1_Test is ModuleTest {
     function testSupportsInterface() public {
         // Test for ICrossChainBase_v1 interface support
         bytes4 interfaceId = type(ICrossChainBase_v1).interfaceId;
-        assertTrue(paymentProcessor.supportsInterface(interfaceId));
+        assertTrue(crossChainBase.supportsInterface(interfaceId));
 
         // Test for random interface ID (should return false)
         bytes4 randomInterfaceId = bytes4(keccak256("random()"));
-        assertFalse(paymentProcessor.supportsInterface(randomInterfaceId));
+        assertFalse(crossChainBase.supportsInterface(randomInterfaceId));
     }
 
     //Test the reinit function
     function testReinitFails() public override(ModuleTest) {
         vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
-        paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
+        crossChainBase.init(_orchestrator, _METADATA, abi.encode(1));
     }
     //--------------------------------------------------------------------------
     //Test: executeBridgeTransfer
@@ -145,7 +143,7 @@ contract CrossChainBase_v1_Test is ModuleTest {
 
         bytes memory executionData = abi.encode(0, 0); //maxFee and ttl setup
 
-        bytes memory result = paymentProcessor.exposed_executeBridgeTransfer(
+        bytes memory result = crossChainBase.exposed_executeBridgeTransfer(
             orders[0], executionData
         );
         assertEq(result, bytes(""));
