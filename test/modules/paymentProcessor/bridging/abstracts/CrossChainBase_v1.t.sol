@@ -81,12 +81,19 @@ contract CrossChainBase_v1_Test is ModuleTest {
 
     //--------------------------------------------------------------------------
     //Test: Initialization
+    /* Given the contract is initialized
+       When checking the initialization
+       Then it should have the correct orchestrator address */
     function testInit() public override(ModuleTest) {
         assertEq(address(crossChainBase.orchestrator()), address(_orchestrator));
     }
 
     //--------------------------------------------------------------------------
     //Test: Interface Support
+    /* Given the contract is initialized
+       When checking interface support
+       Then it should support ICrossChainBase_v1
+       And it should not support random interfaces */
     function testSupportsInterface() public {
         // Test for ICrossChainBase_v1 interface support
         bytes4 interfaceId = type(ICrossChainBase_v1).interfaceId;
@@ -97,7 +104,9 @@ contract CrossChainBase_v1_Test is ModuleTest {
         assertFalse(crossChainBase.supportsInterface(randomInterfaceId));
     }
 
-    //Test the reinit function
+    /* Given the contract is already initialized
+       When trying to reinitialize
+       Then it should revert */
     function testReinitFails() public override(ModuleTest) {
         vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
         crossChainBase.init(_orchestrator, _METADATA, abi.encode(1));
@@ -105,6 +114,9 @@ contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Test: executeBridgeTransfer
 
+    /* Given a valid payment order
+       When executeBridgeTransfer is called
+       Then it should return empty bytes */
     function testExecuteBridgeTransfer() public {
         address[] memory setupRecipients = new address[](1);
         setupRecipients[0] = address(1);

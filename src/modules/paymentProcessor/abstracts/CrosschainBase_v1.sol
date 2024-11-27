@@ -7,21 +7,19 @@ import {IPaymentProcessor_v1} from "@pp/IPaymentProcessor_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {Module_v1} from "src/modules/base/Module_v1.sol";
-//import {IPP_CrossChain_v1} from "./IPP_Template_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
 import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
 /**
- * @title   Inverter Template Payment Processor
+ * @title   Cross-chain Base Contract
  *
- * @notice  Basic template payment processor used as base for developing new payment processors.
+ * @notice  Abstract base contract providing core cross-chain functionality for payment processors.
  *
- * @dev     This contract is used to showcase a basic setup for a payment processor. The contract showcases the
- *          following:
- *          - Inherit from the Module_v1 contract to enable interaction with the Inverter workflow.
- *          - Use of the IPaymentProcessor_v1 interface to facilitate interaction with a payment client.
- *          - Implement custom interface which has all the public facing functions, errors, events and structs.
- *          - Pre-defined layout for all contract functions, modifiers, state variables etc.
- *          - Use of the ERC165Upgradeable contract to check for interface support.
+ * @dev     This contract implements fundamental cross-chain operations and provides:
+ *          - Bridge data storage and retrieval functionality
+ *          - Abstract interface for bridge transfer execution
+ *          - Integration with the Module_v1 base contract
+ *          - Implementation of ICrossChainBase_v1 interface
+ *          - ERC165 interface support for cross-chain functionality
  *
  * @custom:security-contact security@inverter.network
  *                          In case of any concerns or findings, please refer to our Security Policy
@@ -32,8 +30,8 @@ import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
 
 abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     mapping(uint => bytes) internal _bridgeData;
-    /// @inheritdoc ERC165Upgradeable
 
+    /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
         view
@@ -44,18 +42,6 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
         return interfaceId_ == type(ICrossChainBase_v1).interfaceId
             || super.supportsInterface(interfaceId_);
     }
-    //--------------------------------------------------------------------------
-    // State
-
-    /// @dev    The number of payment orders.
-    uint internal _paymentId;
-
-    //--------------------------------------------------------------------------
-    // Events
-
-    event PaymentProcessed(
-        uint indexed paymentId, address recipient, address token, uint amount
-    );
 
     //--------------------------------------------------------------------------
     // Virtual Functions
@@ -67,13 +53,10 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal virtual returns (bytes memory) {
-        emit BridgeTransferExecuted(executionData);
-        return bytes("");
-    }
+    ) internal virtual returns (bytes memory) {}
+
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for
-
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
         virtual
@@ -83,10 +66,9 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     /// @param paymentId The ID of the payment to get the bridge data for
     /// @return The bridge data for the given payment ID
     function getBridgeData(uint paymentId)
-        external
+        public
         view
+        virtual
         returns (bytes memory)
-    {
-        return _bridgeData[paymentId];
-    }
+    {}
 }

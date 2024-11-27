@@ -4,6 +4,8 @@ import {CrossChainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
+import {IPP_Connext_Crosschain_v1} from
+    "src/modules/paymentProcessor/interfaces/IPP_Connext_Crosschain_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {IERC20} from "@oz/token/ERC20/IERC20.sol";
@@ -16,9 +18,23 @@ import {IOrchestrator_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {Module_v1} from "src/modules/base/Module_v1.sol";
 
-/// @title PP_Connext_Crosschain_v1
-/// @notice Payment processor implementation for cross-chain payments using Connext
-/// @dev Extends PP_Crosschain_v1 to handle cross-chain token transfers
+/**
+ * @title   Connext Cross-chain Payment Processor
+ *
+ * @notice  Payment processor implementation for cross-chain payments using the Connext protocol.
+ *
+ * @dev     This contract implements cross-chain payment processing via Connext and provides:
+ *          - Integration with Connext's EverClear protocol for cross-chain transfers
+ *          - WETH handling for native token wrapping
+ *          - Implementation of bridge-specific transfer logic
+ *          - Payment order processing and validation
+ *          - Bridge data storage and retrieval
+ *          - Support for Base network (chainId: 8453)
+ *
+ * @custom:security-contact security@inverter.network
+ *                          In case of any concerns or findings, please refer to our Security Policy
+ *                          at security.inverter.network
+ */
 contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
@@ -50,6 +66,11 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     ) internal override returns (bytes memory) {
         //@notice call the connextBridgeLogic to execute the bridge transfer
         bytes32 intentId = xcall(order, executionData);
+        if (intentId == bytes32(0)) {
+            revert Module__PP_Crosschain__MessageDeliveryFailed(
+                8453, 8453, executionData
+            );
+        }
         return abi.encode(intentId);
     }
 
@@ -68,10 +89,11 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             bytes memory bridgeData =
                 _executeBridgeTransfer(orders[i], executionData);
 
+            _bridgeData[i] = bridgeData;
             emit PaymentOrderProcessed(
                 address(client),
                 orders[i].recipient,
-                address(orders[i].paymentToken),
+                orders[i].paymentToken,
                 orders[i].amount,
                 orders[i].start,
                 orders[i].cliff,
@@ -104,10 +126,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         if (order.recipient == address(0)) {
             revert ICrossChainBase_v1.Module__CrossChainBase__InvalidRecipient();
         }
-
+        // Decode the execution data
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
+
         if (ttl == 0) {
-            revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
+            revert
+                IPP_Connext_Crosschain_v1
+                .Module__PP_Connext_Crosschain__InvalidTTL();
         }
 
         // Wrap ETH into WETH to send with the xcall
@@ -145,7 +170,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     /// @param paymentId The unique identifier of the payment
     /// @return The bridge data associated with the payment (encoded intentId)
     function getBridgeData(uint paymentId)
-        external
+        public
         view
         override
         returns (bytes memory)

@@ -23,17 +23,16 @@ import {SafeERC20} from "@oz/token/ERC20/utils/SafeERC20.sol";
 import {IPP_Crosschain_v1} from "../interfaces/IPP_Crosschain_v1.sol";
 
 /**
- * @title   Inverter Template Payment Processor
+ * @title   Cross-chain Payment Processor Base Contract
  *
- * @notice  Basic template payment processor used as base for developing new payment processors.
+ * @notice  Abstract base contract for implementing cross-chain payment processing functionality.
  *
- * @dev     This contract is used to showcase a basic setup for a payment processor. The contract showcases the
- *          following:
- *          - Inherit from the Module_v1 contract to enable interaction with the Inverter workflow.
- *          - Use of the IPaymentProcessor_v1 interface to facilitate interaction with a payment client.
- *          - Implement custom interface which has all the public facing functions, errors, events and structs.
- *          - Pre-defined layout for all contract functions, modifiers, state variables etc.
- *          - Use of the ERC165Upgradeable contract to check for interface support.
+ * @dev     This contract serves as the base for cross-chain payment processors and provides:
+ *          - Extension of CrossChainBase_v1 for cross-chain functionality
+ *          - Implementation of IPP_Crosschain_v1 interface
+ *          - Core payment validation logic
+ *          - Basic security checks for payment processing
+ *          - Abstract functions for bridge-specific implementations
  *
  * @custom:security-contact security@inverter.network
  *                          In case of any concerns or findings, please refer to our Security Policy
@@ -80,6 +79,9 @@ abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
 
     /// @dev    Gap for possible future upgrades.
     uint[50] private __gap;
+
+    //@dev paymentId
+    uint public _paymentId;
 
     //--------------------------------------------------------------------------
     // Virtual Functions

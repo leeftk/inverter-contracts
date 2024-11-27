@@ -47,11 +47,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     uint public chainId;
 
     // Add this event definition at the contract level
-    event PaymentProcessed(
-        uint indexed paymentId,
-        address recipient,
-        address paymentToken,
-        uint amount
+    event PaymentOrderProcessed(
+        address indexed paymentClient,
+        address indexed recipient,
+        address indexed paymentToken,
+        uint amount,
+        uint start,
+        uint cliff,
+        uint end
     );
 
     // Add these as contract state variables
@@ -178,11 +181,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Expect the event
         vm.expectEmit(true, true, true, true);
-        emit PaymentProcessed(
-            0, // paymentId
+        emit PaymentOrderProcessed(
+            address(paymentClient),
             testRecipient,
             address(token),
-            testAmount
+            testAmount,
+            block.timestamp,
+            0,
+            block.timestamp + 1 days
         );
 
         // Process payments
@@ -230,11 +236,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Expect events for each payment
         for (uint i = 0; i < numRecipients; i++) {
             vm.expectEmit(true, true, true, true);
-            emit PaymentProcessed(
-                i, // paymentId
+            emit PaymentOrderProcessed(
+                address(paymentClient),
                 setupRecipients[i],
                 address(token),
-                setupAmounts[i]
+                setupAmounts[i],
+                block.timestamp,
+                0,
+                block.timestamp + 1 days
             );
         }
 
@@ -476,7 +485,15 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Expectations
         vm.expectEmit(true, true, true, true);
-        emit PaymentProcessed(0, testRecipient, address(token), testAmount);
+        emit PaymentOrderProcessed(
+            address(paymentClient),
+            testRecipient,
+            address(token),
+            testAmount,
+            block.timestamp,
+            0,
+            block.timestamp + 1 days
+        );
 
         // Action
         paymentProcessor.processPayments(

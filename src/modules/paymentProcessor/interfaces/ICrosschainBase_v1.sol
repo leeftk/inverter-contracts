@@ -7,11 +7,15 @@ pragma solidity ^0.8.0;
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
+/// @title ICrossChainBase_v1
+/// @notice Base interface for cross-chain payment processing functionality
 interface ICrossChainBase_v1 {
-    //--------------------------------------------------------------------------
-    // Structs
-
     /// @notice Struct to hold cross-chain message data
+    /// @param messageId Unique identifier for the cross-chain message
+    /// @param sourceChain Address or identifier of the source chain
+    /// @param targetChain Address or identifier of the target chain
+    /// @param payload The encoded data being sent across chains
+    /// @param executed Boolean flag indicating if the message has been processed
     struct CrossChainMessage {
         uint messageId;
         address sourceChain;
@@ -24,32 +28,30 @@ interface ICrossChainBase_v1 {
     // Events
 
     /// @notice Emitted when a bridge transfer is executed
+    /// @param bridgeData The encoded data of the bridge transfer
     event BridgeTransferExecuted(bytes indexed bridgeData);
 
     //--------------------------------------------------------------------------
     // Errors
 
-    /// @notice Amount can not be zero.
+    /// @notice Thrown when attempting to process a transfer with zero amount
     error Module__CrossChainBase__InvalidAmount();
 
-    /// @notice Client is not valid.
+    /// @notice Thrown when an unauthorized client attempts to interact with the contract
     error Module__CrossChainBase__NotValidClient();
 
-    /// @notice Message has already been executed
+    /// @notice Thrown when attempting to execute a message that has already been processed
     error Module__CrossChainBase_MessageAlreadyExecuted();
 
-    /// @notice Invalid TTL provided
-    error Module__CrossChainBase_InvalidTTL();
-
-    /// @notice Invalid chain ID provided
+    /// @notice Thrown when an unsupported or invalid chain ID is provided
     error Module__CrossChainBase_InvalidChainId();
 
-    /// @notice Message verification failed
+    /// @notice Thrown when the cross-chain message fails verification
     error Module__CrossChainBase_MessageVerificationFailed();
 
-    /// @notice Invalid execution data
+    /// @notice Thrown when the provided execution data is malformed or invalid
     error Module__CrossChainBase_InvalidExecutionData();
 
-    /// @notice Invalid recipient
+    /// @notice Thrown when the recipient address is invalid or not allowed
     error Module__CrossChainBase__InvalidRecipient();
 }
