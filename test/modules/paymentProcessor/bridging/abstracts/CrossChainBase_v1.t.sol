@@ -38,22 +38,19 @@ import {ICrossChainBase_v1} from
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 
 /**
- * @title   Inverter Template Payment Processor Tests
+ * @title   CrossChainBase Test Suite
  *
- * @notice  Basic template payment processor used to showcase the unit testing
- *          setup
+ * @notice  Test suite for the CrossChainBase_v1 abstract contract
  *
- * @dev     Not all functions are tested in this template. Placeholders of the
- *          functions that are not tested are added into the contract. This test
- *          showcases the following:
- *          - Inherit from the ModuleTest contract to enable interaction with
- *            the Inverter workflow.
- *          - Showcases the setup of the workflow, uses in test unit tests.
- *          - Pre-defined layout for all setup and functions to be tested.
- *          - Shows the use of Gherkin for documenting the testing. VS Code
- *            extension used for formatting is recommended.
- *          - Shows the use of the modifierInPlace pattern to test the modifier
- *            placement.
+ * @dev     Tests the core functionality of the CrossChainBase contract including:
+ *          - Contract initialization and reinitialization protection
+ *          - Interface support verification
+ *          - Bridge transfer execution
+ *          - Integration with the Inverter workflow through ModuleTest
+ *
+ * @custom:security-contact security@inverter.network
+ *                          In case of any concerns or findings, please refer to our Security Policy
+ *                          at security.inverter.network or email us directly!
  *
  * @author  Inverter Network
  */
@@ -61,13 +58,8 @@ contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     //Constants
     //--------------------------------------------------------------------------
-    //State
-
     //Mocks
     ERC20PaymentClientBaseV1Mock paymentClient;
-
-    //System under test (SuT)
-    //CrossChainBase_v1 public paymentProcessor;
     CrossChainBase_v1_Exposed public paymentProcessor;
 
     //--------------------------------------------------------------------------
@@ -100,19 +92,29 @@ contract CrossChainBase_v1_Test is ModuleTest {
         paymentClient.setIsAuthorized(address(paymentProcessor), true);
         paymentClient.setToken(_token);
     }
+    /* Test CrossChainBase functionality
+        ├── Given the contract is initialized
+        │   └── When checking interface support
+        │       └── Then it should support ICrossChainBase_v1
+        │       └── Then it should not support random interfaces
+        ├── Given the contract is already initialized
+        │   └── When trying to reinitialize
+        │       └── Then it should revert
+        └── Given a valid payment order
+            └── When executeBridgeTransfer is called
+                └── Then it should return empty bytes
+    */
 
     //--------------------------------------------------------------------------
     //Test: Initialization
-    //@zuhaib - we need some basic tests for the base, we just need to init it and
-    //make sure that the executeBridgeTransfer is correctly set and returns empty bytes
-    //Test if the orchestrator is correctly set
     function testInit() public override(ModuleTest) {
         assertEq(
             address(paymentProcessor.orchestrator()), address(_orchestrator)
         );
     }
 
-    //Test the interface support
+    //--------------------------------------------------------------------------
+    //Test: Interface Support
     function testSupportsInterface() public {
         // Test for ICrossChainBase_v1 interface support
         bytes4 interfaceId = type(ICrossChainBase_v1).interfaceId;
@@ -128,8 +130,9 @@ contract CrossChainBase_v1_Test is ModuleTest {
         vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
+    //--------------------------------------------------------------------------
+    //Test: executeBridgeTransfer
 
-    //Test executeBridgeTransfer returns empty bytes
     function testExecuteBridgeTransfer() public {
         address[] memory setupRecipients = new address[](1);
         setupRecipients[0] = address(1);
@@ -147,52 +150,6 @@ contract CrossChainBase_v1_Test is ModuleTest {
         );
         assertEq(result, bytes(""));
     }
-
-    // -----ALL below this we're keeping for reference, but not testing
-    //--------------------------------------------------------------------------
-    //Test: Modifiers
-
-    /* Test validClient modifier in place (extensive testing done through internal modifier functions)
-        └── Given the modifier is in place
-            └── When the function processPayment() is called
-                └── Then it should revert
-    */
-    // function testProcessPayments_modifierInPlace() public {
-    // }
-    //
-    //--------------------------------------------------------------------------
-    //Test: External (public & external)Cros
-
-    //Test external processPayments() function
-
-    //Test external cancelRunningPayments() function
-
-    //Test external unclaimable() function
-
-    //Test external claimPreviouslyUnclaimable() function
-
-    //Test external validPaymentOrder() function
-
-    //--------------------------------------------------------------------------
-    //Test: Internal (tested through exposed_functions)
-
-    /*  test internal _setPayoutAmountMultiplier()
-        ├── Given the newPayoutAmount == 0
-        │   └── When the function _setPayoutAmountMultiplier() is called
-        │       └── Then it should revert
-        └── Given the newPayoutAmount != 0
-            └── When the function _setPayoutAmountMultiplier() is called
-                └── Then it should emit the event
-                    └── And it should set the state correctly
-    */
-
-    //function testInternalSetPayoutAmountMultiplier_FailsGivenZero() public {
-    // }
-
-    //Test the internal _validPaymentReceiver() function
-
-    //Test the internal _validClientModifier() function
-
     //--------------------------------------------------------------------------
     //Helper Functions
 
