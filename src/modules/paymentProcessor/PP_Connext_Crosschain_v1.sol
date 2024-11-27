@@ -100,9 +100,9 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         }
 
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
-        // if (ttl == 0) {
-        //     revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
-        // } @33audits - in case of everclear, both maxFee and ttl can be zero, please check https://docs.everclear.org/developers/guides/xerc20#newintent-called-on-spoke-contract
+        if (ttl == 0) {
+            revert ICrossChainBase_v1.Module__CrossChainBase_InvalidTTL();
+        }
 
         // Wrap ETH into WETH to send with the xcall
         IERC20(order.paymentToken).transferFrom(

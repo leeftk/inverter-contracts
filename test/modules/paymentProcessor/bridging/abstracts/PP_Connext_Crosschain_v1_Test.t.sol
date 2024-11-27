@@ -60,7 +60,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     address public mockWeth;
 
     uint maxFee = 0;
-    uint ttl = 0;
+    uint ttl = 1;
     bytes executionData;
     bytes invalidExecutionData;
 
