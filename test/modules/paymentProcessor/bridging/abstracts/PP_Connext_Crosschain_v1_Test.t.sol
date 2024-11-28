@@ -20,7 +20,8 @@ import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {IPaymentProcessor_v1} from
     "src/modules/paymentProcessor/IPaymentProcessor_v1.sol";
-
+import {PP_Connext_Crosschain_v1_Exposed} from
+    "test/modules/paymentProcessor/bridging/abstracts/PP_Connext_Crosschain_v1_Exposed.sol";
 // Tests and Mocks
 import {Mock_EverclearPayment} from
     "test/modules/paymentProcessor/bridging/abstracts/mocks/Mock_EverclearPayment.sol";
@@ -40,7 +41,7 @@ import {IWETH} from "src/modules/paymentProcessor/interfaces/IWETH.sol";
 import "forge-std/console2.sol";
 
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
-    PP_Connext_Crosschain_v1 public paymentProcessor;
+    PP_Connext_Crosschain_v1_Exposed public paymentProcessor;
     Mock_EverclearPayment public everclearPaymentMock;
     ERC20Mock public token;
     ERC20PaymentClientBaseV1Mock paymentClient;
@@ -77,8 +78,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         mockWeth = address(weth);
 
         // Deploy payment processor via clone
-        address impl = address(new PP_Connext_Crosschain_v1());
-        paymentProcessor = PP_Connext_Crosschain_v1(Clones.clone(impl));
+        address impl = address(new PP_Connext_Crosschain_v1_Exposed());
+        paymentProcessor = PP_Connext_Crosschain_v1_Exposed(Clones.clone(impl));
 
         _setUpOrchestrator(paymentProcessor);
         _authorizer.setIsAuthorized(address(this), true);
