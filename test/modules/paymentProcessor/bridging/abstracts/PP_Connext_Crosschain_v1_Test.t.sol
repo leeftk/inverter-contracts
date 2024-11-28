@@ -18,6 +18,8 @@ import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
+import {IPaymentProcessor_v1} from
+    "src/modules/paymentProcessor/IPaymentProcessor_v1.sol";
 
 // Tests and Mocks
 import {Mock_EverclearPayment} from
@@ -45,17 +47,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     IWETH public weth;
 
     uint public chainId;
-
-    // Add this event definition at the contract level
-    event PaymentOrderProcessed(
-        address indexed paymentClient,
-        address indexed recipient,
-        address indexed paymentToken,
-        uint amount,
-        uint start,
-        uint cliff,
-        uint end
-    );
 
     // Add these as contract state variables
     address public mockConnextBridge;
@@ -181,7 +172,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Expect the event
         vm.expectEmit(true, true, true, true);
-        emit PaymentOrderProcessed(
+        emit IPaymentProcessor_v1.PaymentOrderProcessed(
             address(paymentClient),
             testRecipient,
             address(token),
@@ -236,7 +227,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Expect events for each payment
         for (uint i = 0; i < numRecipients; i++) {
             vm.expectEmit(true, true, true, true);
-            emit PaymentOrderProcessed(
+            emit IPaymentProcessor_v1.PaymentOrderProcessed(
                 address(paymentClient),
                 setupRecipients[i],
                 address(token),
@@ -485,7 +476,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Expectations
         vm.expectEmit(true, true, true, true);
-        emit PaymentOrderProcessed(
+        emit IPaymentProcessor_v1.PaymentOrderProcessed(
             address(paymentClient),
             testRecipient,
             address(token),
