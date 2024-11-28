@@ -56,15 +56,9 @@ import {ICrossChainBase_v1} from
  * @author  Inverter Network
  */
 contract CrosschainBase_v1_Test is ModuleTest {
-    //--------------------------------------------------------------------------
-    //Constants
-    //--------------------------------------------------------------------------
-    //State
-
     //Mocks
     ERC20PaymentClientBaseV1Mock paymentClient;
 
-    //System under test (SuT)
     CrosschainBase_v1 public paymentProcessor;
     //PP_CrossChain_v1_Exposed public paymentProcessor;
 
@@ -73,61 +67,6 @@ contract CrosschainBase_v1_Test is ModuleTest {
     function setUp() public {}
 
     //--------------------------------------------------------------------------
-    //Test: Initialization
-
-    //Test if the orchestrator is correctly set
-    function testInit() public override(ModuleTest) {}
-
-    //Test the interface support
-    function testSupportsInterface() public {}
-
-    //Test the reinit function
-    function testReinitFails() public override(ModuleTest) {}
-    // -----ALL below this we're keeping for reference, but not testing
-    //--------------------------------------------------------------------------
-    //Test: Modifiers
-
-    /* Test validClient modifier in place (extensive testing done through internal modifier functions)
-        └── Given the modifier is in place
-            └── When the function processPayment() is called
-                └── Then it should revert
-    */
-    // function testProcessPayments_modifierInPlace() public {
-    // }
-    //
-    //--------------------------------------------------------------------------
-    //Test: External (public & external)Cros
-
-    //Test external processPayments() function
-
-    //Test external cancelRunningPayments() function
-
-    //Test external unclaimable() function
-
-    //Test external claimPreviouslyUnclaimable() function
-
-    //Test external validPaymentOrder() function
-
-    //--------------------------------------------------------------------------
-    //Test: Internal (tested through exposed_functions)
-
-    /*  test internal _setPayoutAmountMultiplier()
-        ├── Given the newPayoutAmount == 0
-        │   └── When the function _setPayoutAmountMultiplier() is called
-        │       └── Then it should revert
-        └── Given the newPayoutAmount != 0
-            └── When the function _setPayoutAmountMultiplier() is called
-                └── Then it should emit the event
-                    └── And it should set the state correctly
-    */
-
-    //function testInternalSetPayoutAmountMultiplier_FailsGivenZero() public {
-    // }
-
-    //Test the internal _validPaymentReceiver() function
-
-    //Test the internal _validClientModifier() function
-
-    //--------------------------------------------------------------------------
-    //Helper Functions
+    //Test:
+    function test_executeBridgeTransfer() public {}
 }

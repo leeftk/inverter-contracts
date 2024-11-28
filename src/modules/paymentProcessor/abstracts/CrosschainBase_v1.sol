@@ -49,13 +49,6 @@ abstract contract CrosschainBase_v1 is ICrossChainBase_v1, Module_v1 {
     uint internal _paymentId;
 
     //--------------------------------------------------------------------------
-    // Events
-
-    event PaymentProcessed(
-        uint indexed paymentId, address recipient, address token, uint amount
-    );
-
-    //--------------------------------------------------------------------------
     // Virtual Functions
 
     /// @notice Execute the cross-chain bridge transfer

@@ -23,18 +23,6 @@ import {
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
 
-// //import exposed
-// import {PP_CrossChain_v1_Exposed} from
-//     "../../tests/unit/PP_CrossChain_v1_Exposed.sol";
-
-//System under test (SuT)
-// import {
-//     PP_Connext_Crosschain_v1,
-//     IPP_Connext_Crosschain_v1
-// } from "../../../src/templates/modules/Connext_Bridge.sol";
-// import {IPaymentProcessor_v1} from
-//     "../../../src/orchestrator/interfaces/IOrchestrator_v1.sol";
-
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 /**
