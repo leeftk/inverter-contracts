@@ -56,9 +56,15 @@ import {ICrossChainBase_v1} from
  * @author  Inverter Network
  */
 contract CrosschainBase_v1_Test is ModuleTest {
+    //--------------------------------------------------------------------------
+    //Constants
+    //--------------------------------------------------------------------------
+    //State
+
     //Mocks
     ERC20PaymentClientBaseV1Mock paymentClient;
 
+    //System under test (SuT)
     CrosschainBase_v1 public paymentProcessor;
     //PP_CrossChain_v1_Exposed public paymentProcessor;
 
@@ -67,6 +73,14 @@ contract CrosschainBase_v1_Test is ModuleTest {
     function setUp() public {}
 
     //--------------------------------------------------------------------------
-    //Test:
-    function test_executeBridgeTransfer() public {}
+    //Test: Initialization
+
+    //Test if the orchestrator is correctly set
+    function testInit() public override(ModuleTest) {}
+
+    //Test the interface support
+    function testSupportsInterface() public {}
+
+    //Test the reinit function
+    function testReinitFails() public override(ModuleTest) {}
 }

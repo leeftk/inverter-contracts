@@ -61,11 +61,14 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             bytes memory bridgeData =
                 _executeBridgeTransfer(orders[i], executionData);
 
-            emit PaymentProcessed(
-                _paymentId,
+            emit PaymentOrderProcessed(
+                address(client),
                 orders[i].recipient,
-                orders[i].paymentToken,
-                orders[i].amount
+                address(orders[i].paymentToken),
+                orders[i].amount,
+                orders[i].start,
+                orders[i].cliff,
+                orders[i].end
             );
             _paymentId++;
 
