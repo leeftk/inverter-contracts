@@ -46,21 +46,27 @@ import {SafeERC20} from "@oz/token/ERC20/utils/SafeERC20.sol";
 /**
  * @title   Inverter Bancor Virtual Supply Bonding Curve Funding Manager
  *
- * @notice  This contract enables the issuance and redeeming of tokens on a bonding curve, using
- *          a virtual supply for both the issuance and the collateral as input. It integrates
- *          Aragon's {BancorFormula} to manage the calculations for token issuance and redemption
- *          rates based on specified reserve ratios.
+ * @notice  This contract enables the issuance and redeeming of tokens on a
+ *          bonding curve, using a virtual supply for both the issuance and
+ *          the collateral as input. It integrates Aragon's {BancorFormula}
+ *          to manage the calculations for token issuance and redemption rates
+ *          based on specified reserve ratios.
  *
- * @dev     Inherits {BondingCurveBase_v1}, {RedeemingBondingCurveBase_v1}, {VirtualIssuanceSupplyBase_v1},
- *          and {VirtualCollateralSupplyBase_v1}. Implements formulaWrapper functions for bonding curve
- *          calculations using the {BancorFormula}. {Orchestrator_v1} Admin manages
- *          configuration such as virtual supplies and reserve ratios. Ensure interaction adheres to
- *          defined transactional limits and decimal precision requirements to prevent computational
- *          overflows or underflows.
+ * @dev     Inherits {BondingCurveBase_v1}, {RedeemingBondingCurveBase_v1},
+ *          {VirtualIssuanceSupplyBase_v1}, and
+ *          {VirtualCollateralSupplyBase_v1}. Implements formulaWrapper
+ *          functions for bonding curve calculations using the {BancorFormula}.
+ *          {Orchestrator_v1} Admin manages configuration such as virtual
+ *          supplies and reserve ratios. Ensure interaction adheres to defined
+ *          transactional limits and decimal precision requirements to prevent
+ *          computational overflows or underflows.
  *
  * @custom:security-contact security@inverter.network
- *                          In case of any concerns or findings, please refer to our Security Policy
- *                          at security.inverter.network or email us directly!
+ *                          In case of any concerns or findings, please refer
+ *                          to our Security Policy at security.inverter.network
+ *                          or email us directly!
+ *
+ * @custom:version 1.1.1
  *
  * @author  Inverter Network
  */
@@ -91,7 +97,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
 
     using SafeERC20 for IERC20;
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Storage
 
     /// @dev    The interface of the Bancor Formula used to calculate the issuance and redeeming amount.
@@ -122,7 +128,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
     /// @dev    Storage gap for future upgrades.
     uint[50] private __gap;
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Modifiers
 
     /// @dev    Modifier to guarantee the buying and selling functionalities are closed.
@@ -131,7 +137,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
         _;
     }
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Init Function
 
     /// @inheritdoc Module_v1
@@ -193,7 +199,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
         emit OrchestratorTokenSet(_acceptedToken, collateralTokenDecimals);
     }
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Public Mutating Functions
 
     /// @notice Buy tokens on behalf of a specified receiver address. This function is subject
@@ -279,7 +285,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
         sellTo(_msgSender(), _depositAmount, _minAmountOut);
     }
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Public Data Query Functions
 
     /// @inheritdoc IFM_BC_Bancor_Redeeming_VirtualSupply_v1
@@ -351,7 +357,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
         return _token;
     }
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // OnlyOrchestrator Functions
 
     /// @inheritdoc IFundingManager_v1
@@ -415,7 +421,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
         _setReserveRatioForSelling(_reserveRatio);
     }
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Upstream Function Implementations
 
     /// @dev    Calculates the amount of tokens to mint for a given deposit amount using the {BancorFormula}.
@@ -492,7 +498,7 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
         );
     }
 
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Internal Functions
 
     /// @dev    Sets the issuance token for the Bonding Curve Funding Manager.
@@ -591,5 +597,28 @@ contract FM_BC_Bancor_Redeeming_VirtualSupply_v1 is
                 Module__FM_BC_Bancor_Redeeming_VirtualSupply__CurveInteractionsMustBeClosed(
             );
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Overridden Internal Functions
+
+    /// @notice Handles issuance tokens by minting them to the receiver.
+    /// @param  _receiver The address that will receive the bought tokens.
+    /// @param  _issuanceTokenAmount The amount of issuance tokens to handle.
+    function _handleIssuanceTokensAfterBuy(
+        address _receiver,
+        uint _issuanceTokenAmount
+    ) internal virtual override {
+        _mint(_receiver, _issuanceTokenAmount);
+    }
+
+    /// @notice Handles collateral tokens by transferring them to the receiver.
+    /// @param  _receiver The address that will receive the collateral tokens.
+    /// @param  _collateralTokenAmount The amount of collateral tokens to handle.
+    function _handleCollateralTokensAfterSell(
+        address _receiver,
+        uint _collateralTokenAmount
+    ) internal virtual override {
+        token().safeTransfer(_receiver, _collateralTokenAmount);
     }
 }
