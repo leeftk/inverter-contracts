@@ -99,7 +99,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         destinations[0] = 8453; // @note -> hardcode for now -> order.destinationChainId;
 
         // Call newIntent on the EverClearSpoke contract
-        (bytes32 intentId,) = everClearSpoke.newIntent(
+        (intentId,) = everClearSpoke.newIntent(
             destinations,
             order.recipient, // to
             order.paymentToken, // inputAsset
