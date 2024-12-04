@@ -43,16 +43,4 @@ interface ICrossChainBase_v1 {
 
     /// @notice Message verification failed
     error Module__CrossChainBase_MessageVerificationFailed();
-
-    //--------------------------------------------------------------------------
-    // Virtual Functions
-
-    /// @notice Execute the cross-chain bridge transfer
-    /// @dev Override this function to implement specific bridge logic
-    /// @param order The payment order containing all necessary transfer details
-    /// @return bridgeData Arbitrary data returned by the bridge implementation
-    function _executeBridgeTransfer(
-        IERC20PaymentClientBase_v1.PaymentOrder memory order,
-        bytes memory executionData
-    ) external returns (bytes memory);
 }
