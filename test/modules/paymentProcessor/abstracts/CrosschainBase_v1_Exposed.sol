@@ -7,10 +7,8 @@ import {CrosschainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
-import {ICrossChainBase_v1} from
-    "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 
-contract CrosschainBase_v1_Exposed is ICrossChainBase_v1 {
+contract CrosschainBase_v1_Exposed is CrosschainBase_v1 {
     /// @notice Implementation of the bridge transfer logic using EverClear
     ///// @inheritdoc CrosschainBase_v1
     function exposed_executeBridgeTransfer(
@@ -18,5 +16,12 @@ contract CrosschainBase_v1_Exposed is ICrossChainBase_v1 {
         bytes memory executionData
     ) external payable returns (bytes memory) {
         return _executeBridgeTransfer(order, executionData);
+    }
+
+    function _executeBridgeTransfer(
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) internal override(CrosschainBase_v1) returns (bytes memory) {
+        // Add default return value here for testing
     }
 }
