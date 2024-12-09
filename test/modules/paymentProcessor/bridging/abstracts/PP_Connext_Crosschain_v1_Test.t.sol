@@ -99,9 +99,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test initialization
-        └── When the contract is initialized
-            ├── Then it should set the orchestrator correctly
-            └── Then it should set up Connext configuration properly
     */
     function testInit() public override(ModuleTest) {
         assertEq(
@@ -110,12 +107,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test interface support
-        ├── When checking IModule_v1 interface
-        │   └── Then it should return true
-        ├── When checking ICrossChainBase_v1 interface
-        │   └── Then it should return true
-        └── When checking random interface
-            └── Then it should return false
     */
     function testSupportsInterface() public {
         // Test for IModule_v1 interface
@@ -134,9 +125,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         assertFalse(paymentProcessor.supportsInterface(0xffffffff));
     }
 
-    /* Test reinitialization protection
-        └── When trying to reinitialize an already initialized contract
-            └── Then it should revert with InvalidInitialization
+    /* Test reinitialization
     */
     function testReinitFails() public override(ModuleTest) {
         vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
@@ -144,14 +133,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test single payment processing
-    └── Given a valid payment order
-    └── When processing through Connext bridge
-        └── Then should emit PaymentProcessed event
-            ├── And should create Connext intent
-    └── When checking bridge data
-            └── Then a valid intent ID should be stored
+    └── Given single valid payment order
+        └── When processing cross-chain payments
+            └── Then it should emit PaymentProcessed events for payment
+                └── And it should create cross-chain intent
     */
-    function testFuzz_ProcessPayments_singlePayment(
+    function testProcessPayments_worksGivenSingleValidPaymentOrder(
         address testRecipient,
         uint testAmount
     ) public {
@@ -188,16 +175,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
     /* Test multiple payment processing
     └── Given multiple valid payment orders
-    └── When processing cross-chain payments
-        └── Then it should emit PaymentProcessed events for each payment
-            ├── And it should batch transfer tokens correctly
-            └── And it should create multiple cross-chain intents
-
-    .
-    └── When checking bridge data
-    └── Then it should contain valid intent IDs
+        └── When processing cross-chain payments
+            └── Then it should emit PaymentProcessed events for each payment
+                ├── And it should create multiple cross-chain intents
+                └── And it should contain valid intent IDs
     */
-    function testProcessMultiplePayments_worksGivenMultipleValidPaymentOrders(
+    function testProcessPayments_worksGivenMultipleValidPaymentOrders(
         uint8 numRecipients,
         address testRecipient,
         uint96 baseAmount
@@ -258,7 +241,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             ├── Then it should complete successfully
             └── And the bridge data should remain empty
     */
-    function test_ProcessPayments_noPayments() public {
+    function testProcessPayments_worksGivenNoPaymentOrders() public {
         // Process payments and verify _bridgeData mapping is not updated
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
@@ -267,13 +250,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             keccak256(paymentProcessor.getBridgeData(0)) == keccak256(bytes("")),
             "Bridge data should be empty"
         );
+        assertEq(
+            paymentProcessor.intentId(address(paymentClient), address(0)),
+            bytes32(0)
+        );
     }
 
     /* Test invalid execution data
         └── When processing with invalid Connext parameters
             └── Then it should revert
     */
-    function testFuzz_ProcessPayments_invalidExecutionData(
+    function testProcessPayments_revertsGivenInvalidExecutionData(
         address testRecipient,
         uint testAmount
     ) public {
@@ -323,7 +310,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │   └── When attempting to process payment
         │       └── Then it should revert with InvalidRecipient
     */
-    function testFuzz_ProcessPayments_invalidRecipient(uint testAmount)
+    function testProcessPayments_revertsGivenInvalidRecipient(uint testAmount)
         public
     {
         vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
@@ -345,9 +332,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │   └── When attempting to process payment
         │       └── Then it should revert with InvalidAmount
     */
-    function testFuzz_ProcessPayments_invalidAmount(address testRecipient)
-        public
-    {
+    function testProcessPayments_revertsGivenInvalidAmount(
+        address testRecipient
+    ) public {
         vm.assume(testRecipient != address(0));
 
         _setupSinglePayment(testRecipient, 0);
@@ -369,7 +356,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │           └── And intent ID should be stored correctly
                     └── And intent status should be ADDED in Everclear spoke
     */
-    function testFuzz_returnsCorrectBridgeData(
+    function testProcessPayments_worksGivenCorrectBridgeData(
         address testRecipient,
         uint testAmount
     ) public {
@@ -395,10 +382,10 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test empty bridge data
-        └── When checking bridge data with no processed payments
+        └── When checking bridge data with no added payments
             └── Then it should return empty bytes
     */
-    function test_returnsEmptyBridgeData() public {
+    function testProcessPayments_worksGivenEmptyBridgeData() public {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
         // Process payments and verify _bridgeData mapping is updated
@@ -410,11 +397,11 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test insufficient balance
-       Given payment amount exceeds available balance
-        When attempting to process payment
-      Then it should revert with ERC20InsufficientBalance
+        └── Given payment amount exceeds available balance
+            └── When attempting to process payment
+                └── Then it should revert with ERC20InsufficientBalance
     */
-    function testFuzz_ProcessPayments_InsufficientBalance(
+    function testProcessPayments_revertsGivenInsufficientBalance(
         address testRecipient,
         uint testAmount
     ) public {
@@ -443,7 +430,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                     └── And should emit PaymentProcessed event
                     └── And should handle exact balance correctly
     */
-    function testFuzz_ProcessPayments_EdgeCaseAmounts(
+    function testProcessPayments_worksGivenEdgeCaseAmounts(
         address testRecipient,
         uint96 testAmount
     ) public {
