@@ -148,15 +148,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
 
-    /* Test single payment processing
-        ├── Given a valid payment order
-        │   ├── When processing through Connext bridge
-        │   │   ├── Then it should emit PaymentProcessed event
-        │   │   ├── Then it should transfer tokens correctly
-        │   │   └── Then it should create Connext intent
-        │   │
-        │   └── When checking bridge data
-        │       └── Then it should contain valid Connext intent ID
+    /* Test single payment processin
+    └── Given a valid payment order
+    └── When processing through Connext bridge
+        └── Then should emit PaymentProcessed event
+            ├── And should transfer tokens correctly
+            ├── And should create Connext intent
+            ├── When checking bridge data
+            └── Then should contain valid Connext intent ID
     */
     function testFuzz_ProcessPayments_singlePayment(
         address testRecipient,
@@ -188,16 +187,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test multiple payment processing
-        ├── Given multiple valid payment orders
-        │   ├── When processing through Connext bridge
-        │   │   ├── Then it should emit PaymentProcessed events for each payment
-        │   │   ├── Then it should batch transfer tokens correctly
-        │   │   └── Then it should create multiple Connext intents
-        │   │
-        │   └── When checking bridge data
-        │       └── Then it should contain valid Connext intent IDs
+    └── Given multiple valid payment orders
+    └── When processing cross-chain payments
+        └── Then it should emit PaymentProcessed events for each payment
+            ├── And it should batch transfer tokens correctly
+            └── And it should create multiple cross-chain intents
+
+    .
+    └── When checking bridge data
+    └── Then it should contain valid intent IDs
     */
-    function testFuzz_ProcessPayments_multiplePayment(
+    function testProcessMultiplePayments_worksGivenMultipleValidPaymentOrders(
         uint8 numRecipients,
         address testRecipient,
         uint96 baseAmount
@@ -241,12 +241,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         paymentProcessor.processPayments(client, executionData);
+
+        //should be checking in the mock for valid bridge data
     }
 
     /* Test empty payment processing
         └── When processing with no payment orders
             ├── Then it should complete successfully
-            └── Then bridge data should remain empty
+            └── And the bridge data should remain empty
     */
     function test_ProcessPayments_noPayments() public {
         // Process payments and verify _bridgeData mapping is not updated
@@ -281,34 +283,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.processPayments(client, invalidExecutionData);
     }
 
-    /* Test bridge data reversion
-        ├── Given invalid execution data
-        │   └── When attempting to process payment
-        │       ├── Then it should revert
-        │       └── Then no bridge data should be stored
-    */
-    function testFuzz_returnsCorrectBridgeDataRevert(
-        address testRecipient,
-        uint testAmount
-    ) public {
-        vm.assume(testRecipient != address(0));
-        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
-        _setupSinglePayment(testRecipient, testAmount);
-
-        IERC20PaymentClientBase_v1 client =
-            IERC20PaymentClientBase_v1(address(paymentClient));
-
-        // Process payments
-        vm.expectRevert();
-        paymentProcessor.processPayments(client, invalidExecutionData);
-    }
-
     /* Test empty execution data
         ├── Given empty execution data bytes
         │   └── When attempting to process payment
         │       └── Then it should revert with InvalidExecutionData
     */
-    function testFuzz_ProcessPayments_emptyExecutionData(
+    function testProcessPayments_revertsGivenEmptyExecutionData(
         address testRecipient,
         uint testAmount
     ) public {
