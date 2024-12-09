@@ -12,9 +12,6 @@ import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {CrossChainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
-//External Dependencies
-import {Clones} from "@oz/proxy/Clones.sol";
-
 import {
     IERC20PaymentClientBase_v1,
     ERC20PaymentClientBaseV1Mock,
@@ -26,7 +23,9 @@ import {IPaymentProcessor_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
+//External Dependencies
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
+import {Clones} from "@oz/proxy/Clones.sol";
 
 contract CrossChainBase_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------

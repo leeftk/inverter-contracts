@@ -27,8 +27,7 @@ import {Mock_EverclearPayment} from
     "test/modules/paymentProcessor/bridging/abstracts/mocks/Mock_EverclearPayment.sol";
 import {
     IERC20PaymentClientBase_v1,
-    ERC20PaymentClientBaseV1Mock,
-    ERC20Mock
+    ERC20PaymentClientBaseV1Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
 import {
     ModuleTest,
@@ -43,7 +42,6 @@ import "forge-std/console2.sol";
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     PP_Connext_Crosschain_v1_Exposed public paymentProcessor;
     Mock_EverclearPayment public everclearPaymentMock;
-    ERC20Mock public token;
     ERC20PaymentClientBaseV1Mock paymentClient;
     IWETH public weth;
 
@@ -68,9 +66,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Prepare execution data for bridge operations
         executionData = abi.encode(maxFee, ttl);
         invalidExecutionData = abi.encode(address(0));
-
-        // Deploy test token
-        token = new ERC20Mock("Test Token", "TEST");
 
         // Deploy mock contracts and set addresses
         everclearPaymentMock = new Mock_EverclearPayment();
@@ -98,7 +93,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Configure payment client
         paymentClient.init(_orchestrator, _METADATA, bytes(""));
         paymentClient.setIsAuthorized(address(paymentProcessor), true);
-        paymentClient.setToken(token);
+        paymentClient.setToken(_token);
 
         _setupInitialBalances();
     }
@@ -148,14 +143,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
 
-    /* Test single payment processin
+    /* Test single payment processing
     └── Given a valid payment order
     └── When processing through Connext bridge
         └── Then should emit PaymentProcessed event
-            ├── And should transfer tokens correctly
             ├── And should create Connext intent
-            ├── When checking bridge data
-            └── Then should contain valid Connext intent ID
+    └── When checking bridge data
+            └── Then a valid intent ID should be stored
     */
     function testFuzz_ProcessPayments_singlePayment(
         address testRecipient,
@@ -175,7 +169,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         emit IPaymentProcessor_v1.PaymentOrderProcessed(
             address(paymentClient),
             testRecipient,
-            address(token),
+            address(_token),
             testAmount,
             block.timestamp,
             0,
@@ -184,6 +178,12 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         paymentProcessor.processPayments(client, executionData);
+        bytes32 intentId =
+            paymentProcessor.intentId(address(paymentClient), testRecipient);
+        assertEq(
+            uint(everclearPaymentMock.status(intentId)),
+            uint(Mock_EverclearPayment.IntentStatus.ADDED)
+        );
     }
 
     /* Test multiple payment processing
@@ -231,7 +231,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             emit IPaymentProcessor_v1.PaymentOrderProcessed(
                 address(paymentClient),
                 setupRecipients[i],
-                address(token),
+                address(_token),
                 setupAmounts[i],
                 block.timestamp,
                 0,
@@ -241,8 +241,16 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         paymentProcessor.processPayments(client, executionData);
-
         //should be checking in the mock for valid bridge data
+        for (uint i = 0; i < numRecipients; i++) {
+            bytes32 intentId = paymentProcessor.intentId(
+                address(paymentClient), setupRecipients[i]
+            );
+            assertEq(
+                uint(everclearPaymentMock.status(intentId)),
+                uint(Mock_EverclearPayment.IntentStatus.ADDED)
+            );
+        }
     }
 
     /* Test empty payment processing
@@ -357,9 +365,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     /* Test bridge data storage
         ├── Given a valid payment order
         │   └── When processing payment
-        │       ├── Then bridge data should not be empty
-        │       ├── Then intent ID should be stored correctly
-        │       └── Then intent status should be ADDED in Everclear spoke
+        │       └── Then bridge data should not be empty
+        │           └── And intent ID should be stored correctly
+                    └── And intent status should be ADDED in Everclear spoke
     */
     function testFuzz_returnsCorrectBridgeData(
         address testRecipient,
@@ -402,9 +410,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test insufficient balance
-        ├── Given payment amount exceeds available balance
-        │   └── When attempting to process payment
-        │       └── Then it should revert with ERC20InsufficientBalance
+       Given payment amount exceeds available balance
+        When attempting to process payment
+      Then it should revert with ERC20InsufficientBalance
     */
     function testFuzz_ProcessPayments_InsufficientBalance(
         address testRecipient,
@@ -421,7 +429,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             abi.encodeWithSelector(
                 IERC20Errors.ERC20InsufficientBalance.selector,
                 address(this),
-                token.balanceOf(address(paymentProcessor)),
+                _token.balanceOf(address(paymentProcessor)),
                 testAmount
             )
         );
@@ -429,11 +437,11 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test edge case amounts
-        ├── Given payment processor has exactly required amount
-        │   └── When processing payment
-        │       ├── Then it should process successfully
-        │       ├── Then it should emit PaymentProcessed event
-        │       └── Then it should handle exact balance correctly
+        └── Given payment processor has exactly required amount
+            └── When processing payment
+                └── Then it should process successfully
+                    └── And should emit PaymentProcessed event
+                    └── And should handle exact balance correctly
     */
     function testFuzz_ProcessPayments_EdgeCaseAmounts(
         address testRecipient,
@@ -444,14 +452,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.assume(testRecipient != address(0));
 
         // Setup - Clear existing balance
-        uint currentBalance = token.balanceOf(address(paymentProcessor));
+        uint currentBalance = _token.balanceOf(address(paymentProcessor));
         if (currentBalance > 0) {
             vm.prank(address(paymentProcessor));
-            token.transfer(address(1), currentBalance);
+            _token.transfer(address(1), currentBalance);
         }
 
         // Setup - Mint exact amount needed
-        token.mint(address(paymentProcessor), testAmount);
+        _token.mint(address(paymentProcessor), testAmount);
 
         _setupSinglePayment(testRecipient, testAmount);
 
@@ -460,7 +468,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         emit IPaymentProcessor_v1.PaymentOrderProcessed(
             address(paymentClient),
             testRecipient,
-            address(token),
+            address(_token),
             testAmount,
             block.timestamp,
             0,
@@ -505,7 +513,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         for (uint i = 0; i < orderCount; i++) {
             orders[i] = IERC20PaymentClientBase_v1.PaymentOrder({
                 recipient: recipients[i],
-                paymentToken: address(token),
+                paymentToken: address(_token),
                 amount: amounts[i],
                 start: block.timestamp,
                 cliff: 0,
@@ -517,11 +525,11 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
     function _setupInitialBalances() internal {
         // Setup token approvals and initial balances
-        token.mint(address(this), MINTED_SUPPLY);
-        token.approve(address(paymentProcessor), type(uint).max);
+        _token.mint(address(this), MINTED_SUPPLY);
+        _token.approve(address(paymentProcessor), type(uint).max);
 
-        token.mint(address(paymentProcessor), MINTED_SUPPLY); // Mint tokens to processor
+        _token.mint(address(paymentProcessor), MINTED_SUPPLY); // Mint _tokens to processor
         vm.prank(address(paymentProcessor));
-        token.approve(address(paymentProcessor), type(uint).max); // Processor approves bridge logic
+        _token.approve(address(paymentProcessor), type(uint).max); // Processor approves bridge logic
     }
 }

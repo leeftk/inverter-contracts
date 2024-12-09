@@ -16,10 +16,10 @@ contract PP_Connext_Crosschain_v1_Exposed is PP_Connext_Crosschain_v1 {
     }
 
     // Expose internal xcall function
-    function exposed_xcall(
+    function exposed_createCrossChainIntent(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) external returns (bytes32) {
-        return xcall(order, executionData);
+        return createCrossChainIntent(order, executionData);
     }
 }

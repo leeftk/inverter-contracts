@@ -39,6 +39,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
+    /// @dev    Tracks all stream details for all payment orders of a paymentReceiver for a specific paymentClient.
+    ///         paymentClient => paymentReceiver => intentId.
+    mapping(address => mapping(address => bytes32)) public intentId;
+
     /// @notice Initializes the payment processor module
     /// @param orchestrator_ The address of the orchestrator contract
     /// @param metadata Module metadata
@@ -65,7 +69,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         bytes memory executionData
     ) internal override returns (bytes memory) {
         //@notice call the connextBridgeLogic to execute the bridge transfer
-        bytes32 intentId = xcall(order, executionData);
+        bytes32 intentId = createCrossChainIntent(order, executionData);
         if (intentId == bytes32(0)) {
             revert Module__PP_Crosschain__MessageDeliveryFailed(
                 8453, 8453, executionData
@@ -100,7 +104,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
                 orders[i].end
             );
             _paymentId++;
-
+            intentId[address(client)][orders[i].recipient] = bytes32(bridgeData);
             // Inform the client about the processed amount
             client.amountPaid(orders[i].paymentToken, orders[i].amount);
         }
@@ -110,7 +114,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     /// @param order The payment order to be processed
     /// @param executionData Encoded data containing maxFee and TTL for the transfer
     /// @return intentId The unique identifier for the cross-chain transfer
-    function xcall(
+    function createCrossChainIntent(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal returns (bytes32) {
