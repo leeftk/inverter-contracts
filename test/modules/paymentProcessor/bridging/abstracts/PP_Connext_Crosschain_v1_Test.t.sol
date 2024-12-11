@@ -138,7 +138,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             └── Then it should emit PaymentProcessed events for payment
                 └── And it should create cross-chain intent
     */
-    function testProcessPayments_worksGivenSingleValidPaymentOrder(
+    function testPublicProcessPayments_succeedsGivenSingleValidPaymentOrder(
         address testRecipient,
         uint testAmount
     ) public {
@@ -180,7 +180,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 ├── And it should create multiple cross-chain intents
                 └── And it should contain valid intent IDs
     */
-    function testProcessPayments_worksGivenMultipleValidPaymentOrders(
+    function testPublicProcessPayments_succeedsGivenMultipleValidPaymentOrders(
         uint8 numRecipients,
         address testRecipient,
         uint96 baseAmount
@@ -241,7 +241,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             ├── Then it should complete successfully
             └── And the bridge data should remain empty
     */
-    function testProcessPayments_worksGivenNoPaymentOrders() public {
+    function testPublicProcessPayments_succeedsGivenNoPaymentOrders() public {
         // Process payments and verify _bridgeData mapping is not updated
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
@@ -260,7 +260,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         └── When processing with invalid Connext parameters
             └── Then it should revert
     */
-    function testProcessPayments_revertsGivenInvalidExecutionData(
+    function testPublicProcessPayments_revertsGivenInvalidExecutionData(
         address testRecipient,
         uint testAmount
     ) public {
@@ -283,7 +283,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │   └── When attempting to process payment
         │       └── Then it should revert with InvalidExecutionData
     */
-    function testProcessPayments_revertsGivenEmptyExecutionData(
+    function testPublicProcessPayments_revertsGivenEmptyExecutionData(
         address testRecipient,
         uint testAmount
     ) public {
@@ -310,9 +310,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │   └── When attempting to process payment
         │       └── Then it should revert with InvalidRecipient
     */
-    function testProcessPayments_revertsGivenInvalidRecipient(uint testAmount)
-        public
-    {
+    function testPublicProcessPayments_revertsGivenInvalidRecipient(
+        uint testAmount
+    ) public {
         vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
 
         _setupSinglePayment(address(0), testAmount);
@@ -332,7 +332,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │   └── When attempting to process payment
         │       └── Then it should revert with InvalidAmount
     */
-    function testProcessPayments_revertsGivenInvalidAmount(
+    function testPublicProcessPayments_revertsGivenInvalidAmount(
         address testRecipient
     ) public {
         vm.assume(testRecipient != address(0));
@@ -356,7 +356,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         │           └── And intent ID should be stored correctly
                     └── And intent status should be ADDED in Everclear spoke
     */
-    function testProcessPayments_worksGivenCorrectBridgeData(
+    function testPublicProcessPayments_worksGivenCorrectBridgeData(
         address testRecipient,
         uint testAmount
     ) public {
@@ -385,7 +385,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         └── When checking bridge data with no added payments
             └── Then it should return empty bytes
     */
-    function testProcessPayments_worksGivenEmptyBridgeData() public {
+    function testPublicProcessPayments_worksGivenEmptyBridgeData() public {
         IERC20PaymentClientBase_v1 client =
             IERC20PaymentClientBase_v1(address(paymentClient));
         // Process payments and verify _bridgeData mapping is updated
@@ -401,7 +401,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             └── When attempting to process payment
                 └── Then it should revert with ERC20InsufficientBalance
     */
-    function testProcessPayments_revertsGivenInsufficientBalance(
+    function testPublicProcessPayments_revertsGivenInsufficientBalance(
         address testRecipient,
         uint testAmount
     ) public {
@@ -430,7 +430,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                     └── And should emit PaymentProcessed event
                     └── And should handle exact balance correctly
     */
-    function testProcessPayments_worksGivenEdgeCaseAmounts(
+    function testPublicProcessPayments_worksGivenEdgeCaseAmounts(
         address testRecipient,
         uint96 testAmount
     ) public {
