@@ -24,9 +24,7 @@ import {IOrchestrator_v1} from
 
 /**
  * @title   Connext Cross-chain Payment Processor
- *
- * @notice  Payment processor implementation for cross-chain payments using the Connext protocol.
- *
+ * @notice  Payment processor implementation for cross-chain payments using the Connext protocol
  * @dev     This contract implements cross-chain payment processing via Connext and provides:
  *          - Integration with Connext's EverClear protocol for cross-chain transfers
  *          - WETH handling for native token wrapping
@@ -34,14 +32,7 @@ import {IOrchestrator_v1} from
  *          - Payment order processing and validation
  *          - Bridge data storage and retrieval
  *          - Support for Base network (chainId: 8453)
- *
  * @custom:security-contact security@inverter.network
- *                          In case of any concerns or findings, please refer to our Security Policy
- *                          at security.inverter.network
- *
- * @custom:version 1.0.0
- * @custom:standard-version 1.0.0
- * @author Inverter Network
  */
 contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     // Storage Variables
@@ -67,10 +58,12 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     error FailedTransfer();
 
     // External Functions
-    /// @notice Initializes the payment processor module
-    /// @param orchestrator_ The address of the orchestrator contract
-    /// @param metadata Module metadata
-    /// @param configData ABI encoded configuration data containing everClearSpoke and WETH addresses
+    /**
+     * @notice Initializes the payment processor module
+     * @param orchestrator_ The orchestrator contract address
+     * @param metadata Module metadata
+     * @param configData ABI encoded configuration data (everClearSpoke and WETH addresses)
+     */
     function init(
         IOrchestrator_v1 orchestrator_,
         Metadata memory metadata,
@@ -84,14 +77,15 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         weth = IWETH(weth_);
     }
 
-    /// @notice Processes multiple payment orders through the bridge
-    /// @param client The payment client contract interface
-    /// @param executionData Additional data needed for execution (encoded maxFee and TTL)
+    /**
+     * @notice Processes multiple payment orders through the bridge
+     * @param client The payment client contract interface
+     * @param executionData Additional data needed for execution (encoded maxFee and TTL)
+     */
     function processPayments(
         IERC20PaymentClientBase_v1 client,
         bytes memory executionData
     ) external {
-        // Collect orders from the client
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
 
@@ -112,15 +106,17 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             );
             _paymentId++;
             intentId[address(client)][orders[i].recipient] = bytes32(bridgeData);
-            // Inform the client about the processed amount
             client.amountPaid(orders[i].paymentToken, orders[i].amount);
         }
     }
 
-    /// @notice Cancels a pending transfer and returns funds to the client
-    /// @param client The payment client address
-    /// @param recipient The recipient address
-    /// @param pendingIntentId The intentId to cancel
+    /**
+     * @notice Cancels a pending transfer and returns funds to the client
+     * @param client The payment client address
+     * @param recipient The recipient address
+     * @param pendingIntentId The intentId to cancel
+     * @param order The payment order details
+     */
     function cancelTransfer(
         address client,
         address recipient,
@@ -129,9 +125,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     ) external {
         _validateTransferRequest(client, recipient, pendingIntentId);
         _cleanupFailedTransfer(client, recipient, pendingIntentId);
-        //Set approval to 0
-        IERC20(order.paymentToken).approve(address(everClearSpoke), 0);
-        // Just do the transfer inline
+
         if (!IERC20(order.paymentToken).transfer(recipient, order.amount)) {
             revert FailedTransfer();
         }
@@ -139,6 +133,14 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         emit TransferCancelled(client, recipient, pendingIntentId, order.amount);
     }
 
+    /**
+     * @notice Retries a previously failed transfer
+     * @param client The payment client address
+     * @param recipient The recipient address
+     * @param pendingIntentId The failed intent ID
+     * @param order The payment order details
+     * @param executionData New execution data for retry
+     */
     function retryFailedTransfer(
         address client,
         address recipient,
@@ -160,9 +162,11 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     }
 
     // Public Functions
-    /// @notice Retrieves the bridge data for a specific payment ID
-    /// @param paymentId The unique identifier of the payment
-    /// @return The bridge data associated with the payment (encoded intentId)
+    /**
+     * @notice Retrieves the bridge data for a specific payment ID
+     * @param paymentId The unique identifier of the payment
+     * @return The bridge data associated with the payment
+     */
     function getBridgeData(uint paymentId)
         public
         view
@@ -173,10 +177,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     }
 
     // Internal Functions
-    /// @notice Execute the cross-chain bridge transfer
-    /// @dev Override this function to implement specific bridge logic
-    /// @param order The payment order containing all necessary transfer details
-    /// @return bridgeData Arbitrary data returned by the bridge implementation
+    /**
+     * @dev Execute the cross-chain bridge transfer
+     * @param order The payment order containing transfer details
+     * @param executionData Additional execution parameters
+     * @param client The client address
+     * @return bridgeData Data returned by the bridge implementation
+     */
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData,
@@ -195,6 +202,12 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         return abi.encode(_intentId);
     }
 
+    /**
+     * @dev Creates a new cross-chain intent for payment transfer
+     * @param order The payment order details
+     * @param executionData Additional execution parameters
+     * @return The ID of the created intent
+     */
     function createCrossChainIntent(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
@@ -235,7 +248,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         );
     }
 
-    /// @dev Common validation for transfer-related operations
+    /**
+     * @dev Validates a transfer request
+     * @param client The payment client address
+     * @param recipient The recipient address
+     * @param pendingIntentId The intent ID to validate
+     * @return The amount of the failed transfer
+     */
     function _validateTransferRequest(
         address client,
         address recipient,
@@ -257,7 +276,12 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         return failedAmount;
     }
 
-    /// @dev Helper function to clean up storage after handling a failed transfer
+    /**
+     * @dev Cleans up storage after handling a failed transfer
+     * @param client The payment client address
+     * @param recipient The recipient address
+     * @param pendingIntentId The intent ID to clean up
+     */
     function _cleanupFailedTransfer(
         address client,
         address recipient,
@@ -267,6 +291,10 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         delete failedTransfers[client][recipient][pendingIntentId];
     }
 
+    /**
+     * @dev Validates a payment order
+     * @param order The payment order to validate
+     */
     function _validateOrder(
         IERC20PaymentClientBase_v1.PaymentOrder memory order
     ) internal pure {
