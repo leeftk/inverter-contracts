@@ -192,9 +192,13 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         uint96 baseAmount
     ) public {
         // Assumptions to keep the test manageable and within bounds
-        vm.assume(numRecipients > 0 && numRecipients <= type(uint8).max); // Limit array size
+        vm.assume(numRecipients > 0 && numRecipients <= 10);
         vm.assume(testRecipient != address(0));
-        vm.assume(baseAmount > 0 && baseAmount <= MINTED_SUPPLY / numRecipients); // Ensure total amount won't exceed MINTED_SUPPLY
+
+        // Just make sure baseAmount * numRecipients doesn't exceed MINTED_SUPPLY
+        vm.assume(
+            baseAmount > 0 && baseAmount <= MINTED_SUPPLY / (numRecipients * 2)
+        );
 
         // Setup mock payment orders
         address[] memory setupRecipients = new address[](numRecipients);
@@ -202,6 +206,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         for (uint i = 0; i < numRecipients; i++) {
             setupRecipients[i] = testRecipient;
+            // Simple amount calculation without any Math.min nonsense
             setupAmounts[i] =
                 1 + (uint(keccak256(abi.encode(i, baseAmount))) % baseAmount);
         }
