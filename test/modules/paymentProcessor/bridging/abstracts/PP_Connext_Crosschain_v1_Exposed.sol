@@ -22,4 +22,13 @@ contract PP_Connext_Crosschain_v1_Exposed is PP_Connext_Crosschain_v1 {
     ) external returns (bytes32) {
         return createCrossChainIntent(order, executionData);
     }
+
+    function exposed_setFailedTransfer(
+        address client,
+        address recipient,
+        bytes32 intentId,
+        uint amount
+    ) external {
+        failedTransfers[client][recipient][intentId] = amount;
+    }
 }

@@ -38,11 +38,17 @@ import {OZErrors} from "test/utils/errors/OZErrors.sol";
 import {IERC20Errors} from "@oz/interfaces/draft-IERC6093.sol";
 import {IWETH} from "src/modules/paymentProcessor/interfaces/IWETH.sol";
 import "forge-std/console2.sol";
+import {IPP_Crosschain_v1} from
+    "src/modules/paymentProcessor/interfaces/IPP_Crosschain_v1.sol";
+
+import {IModule_v1, IOrchestrator_v1} from "src/modules/base/IModule_v1.sol";
 
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     PP_Connext_Crosschain_v1_Exposed public paymentProcessor;
     Mock_EverclearPayment public everclearPaymentMock;
     ERC20PaymentClientBaseV1Mock paymentClient;
+    IPP_Crosschain_v1 public crossChainBase;
+
     IWETH public weth;
 
     uint public chainId;
@@ -382,7 +388,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     }
 
     /* Test empty bridge data
-        └── When checking bridge data with no added payments
+        ── When checking bridge data with no added payments
             └── Then it should return empty bytes
     */
     function testPublicProcessPayments_worksGivenEmptyBridgeData() public {
@@ -468,9 +474,156 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
+    /* Test retry failed transfer
+    └── Given a failed transfer
+        └── When retrying with valid execution data
+            └── Then it should create a new intent
+                └── And clear the failed transfer record
+                └── And emit FailedTransferRetried event
+    */
+    function testRetryFailedTransfer_succeeds(address recipient) public {
+        // Setup
+        address recipient;
+        uint amount = 1 ether;
+
+        // Setup initial payment
+        _setupSinglePayment(recipient, amount);
+
+        // Process payment first time (this will create an intent)
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+
+        // Get the intent ID that was created
+        bytes32 originalIntentId =
+            paymentProcessor.intentId(address(paymentClient), recipient);
+
+        // Simulate a failed transfer by setting it in the failed transfers mapping
+        paymentProcessor.exposed_setFailedTransfer(
+            address(paymentClient), recipient, originalIntentId, amount
+        );
+
+        // // Now retry the failed transfer
+        // paymentProcessor.retryFailedTransfer(
+        //     address(paymentClient), recipient, originalIntentId, executionData
+        // );
+
+        // Verify:
+        // 1. The failed transfer was cleared
+        assertEq(
+            paymentProcessor.failedTransfers(
+                address(paymentClient), recipient, originalIntentId
+            ),
+            0
+        );
+
+        // 2. A new intent was created (should be different from original)
+        bytes32 newIntentId =
+            paymentProcessor.intentId(address(paymentClient), recipient);
+        assertTrue(newIntentId != originalIntentId);
+        assertTrue(newIntentId != bytes32(0));
+    }
+
+    /* Test cancel transfer
+    └── Given a pending transfer
+        └── When cancelled by the recipient
+            └── Then it should clear the intent
+                └── And return funds to recipient
+                └── And emit TransferCancelled event
+    */
+    function testCancelTransfer_succeeds() public {
+        // Setup
+        address recipient = address(0xBEEF);
+
+        uint amount = 1 ether;
+
+        // Setup the payment and process it
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _setupSinglePayment(recipient, amount);
+        paymentClient.addPaymentOrder(orders[0]);
+        //call processPayments with maxFee = 333
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)),
+            abi.encode(333, 1)
+        );
+        console2.log("Fucker who seneeed", address(this));
+        // see if failed failedTransfers updates
+        assertEq(
+            paymentProcessor.failedTransfers(
+                address(paymentClient), recipient, bytes32(0)
+            ),
+            orders[0].amount
+        );
+
+        uint failedIntentId = paymentProcessor.failedTransfers(
+            address(paymentClient), recipient, bytes32(0)
+        );
+        console2.log("AMOUNT", failedIntentId);
+        assertEq(failedIntentId, orders[0].amount);
+
+        // Cancel as recipient
+        vm.prank(address(paymentClient));
+        paymentProcessor.cancelTransfer(
+            address(paymentClient), recipient, bytes32(0), orders[0]
+        );
+
+        // Verify intentId was cleared
+        assertEq(
+            paymentProcessor.intentId(address(paymentClient), recipient),
+            bytes32(0)
+        );
+    }
+
+    /* Test cancel transfer by non-recipient
+    └── Given a pending transfer
+        └── When cancelled by someone other than recipient
+            └── Then it should revert with InvalidAddress
+    */
+    function testCancelTransfer_revertsForNonRecipient(
+        address testRecipient,
+        address nonRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(nonRecipient != testRecipient);
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
+        _setupSinglePayment(testRecipient, testAmount);
+
+        // Process payment to create intent
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+
+        bytes32 pendingIntentId =
+            paymentProcessor.intentId(address(paymentClient), testRecipient);
+
+        // Create payment order for cancellation
+        IERC20PaymentClientBase_v1.PaymentOrder memory order =
+        IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: testRecipient,
+            paymentToken: address(_token),
+            amount: testAmount,
+            start: block.timestamp,
+            cliff: 0,
+            end: block.timestamp + 1 days
+        });
+
+        // Prank as non-recipient
+        vm.prank(nonRecipient);
+
+        vm.expectRevert(IModule_v1.Module__InvalidAddress.selector);
+        paymentProcessor.cancelTransfer(
+            address(paymentClient), testRecipient, pendingIntentId, order
+        );
+    }
+
     // Helper functions
 
-    function _setupSinglePayment(address _recipient, uint _amount) internal {
+    function _setupSinglePayment(address _recipient, uint _amount)
+        internal
+        returns (IERC20PaymentClientBase_v1.PaymentOrder[] memory)
+    {
         address[] memory setupRecipients = new address[](1);
         setupRecipients[0] = _recipient;
         uint[] memory setupAmounts = new uint[](1);
@@ -478,18 +631,14 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             _createPaymentOrders(1, setupRecipients, setupAmounts);
-        paymentClient.addPaymentOrders(orders);
+        return orders;
     }
 
     function _createPaymentOrders(
         uint orderCount,
         address[] memory recipients,
         uint[] memory amounts
-    )
-        internal
-        view
-        returns (IERC20PaymentClientBase_v1.PaymentOrder[] memory)
-    {
+    ) internal returns (IERC20PaymentClientBase_v1.PaymentOrder[] memory) {
         // Sanity checks for array lengths
         require(
             recipients.length == orderCount && amounts.length == orderCount,
@@ -497,6 +646,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             new IERC20PaymentClientBase_v1.PaymentOrder[](orderCount);
+        //add payment order to client
+
         for (uint i = 0; i < orderCount; i++) {
             orders[i] = IERC20PaymentClientBase_v1.PaymentOrder({
                 recipient: recipients[i],
@@ -506,6 +657,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 cliff: 0,
                 end: block.timestamp + 1 days
             });
+            paymentClient.addPaymentOrder(orders[i]);
         }
         return orders;
     }

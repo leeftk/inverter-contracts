@@ -1,5 +1,6 @@
 pragma solidity ^0.8.20;
 
+import {console} from "forge-std/console.sol";
 import {CrossChainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
 import {ICrossChainBase_v1} from
@@ -39,14 +40,22 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     IEverclearSpoke public everClearSpoke;
     IWETH public weth;
 
-    /// @dev    Tracks all stream details for all payment orders of a paymentReceiver for a specific paymentClient.
+    error FailedTransfer();
+
+    /// @dev    Tracks all details for all payment orders of a paymentReceiver for a specific paymentClient.
     ///         paymentClient => paymentReceiver => intentId.
-    mapping(address => mapping(address => bytes32)) public intentId;
+    mapping(
+        address paymentClient => mapping(address recipient => bytes32 intentId)
+    ) public intentId;
 
     /// @dev Tracks failed transfers that can be retried
     /// paymentClient => recipient => intentId => amount
-    mapping(address => mapping(address => mapping(bytes32 => uint))) public
-        failedTransfers;
+    mapping(
+        address paymentClient
+            => mapping(
+                address recipient => mapping(bytes32 intentId => uint amount)
+            )
+    ) public failedTransfers;
 
     /// @notice Initializes the payment processor module
     /// @param orchestrator_ The address of the orchestrator contract
@@ -83,20 +92,20 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     /// @return bridgeData Arbitrary data returned by the bridge implementation
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
-        bytes memory executionData
-    ) internal override returns (bytes memory) {
+        bytes memory executionData,
+        address client
+    ) internal returns (bytes memory) {
         bytes32 _intentId = createCrossChainIntent(order, executionData);
         if (_intentId == bytes32(0)) {
             // Track failed transfer
-            failedTransfers[msg.sender][order.recipient][_intentId] =
-                order.amount;
+            failedTransfers[client][order.recipient][_intentId] = order.amount;
             emit TransferFailed(
-                msg.sender, order.recipient, _intentId, order.amount
+                client, order.recipient, _intentId, order.amount
             );
 
-            revert Module__PP_Crosschain__MessageDeliveryFailed(
-                8453, 8453, executionData
-            );
+            // revert Module__PP_Crosschain__MessageDeliveryFailed(
+            //     8453, 8453, executionData
+            // );
         }
         return abi.encode(_intentId);
     }
@@ -113,8 +122,9 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         (orders,,) = client.collectPaymentOrders();
 
         for (uint i = 0; i < orders.length; i++) {
-            bytes memory bridgeData =
-                _executeBridgeTransfer(orders[i], executionData);
+            bytes memory bridgeData = _executeBridgeTransfer(
+                orders[i], executionData, address(client)
+            );
 
             _bridgeData[i] = bridgeData;
             emit PaymentOrderProcessed(
@@ -146,7 +156,6 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
                 ICrossChainBase_v1
                 .Module__CrossChainBase_InvalidExecutionData();
         }
-
         if (order.amount == 0) {
             revert ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount();
         }
@@ -155,7 +164,6 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         }
         // Decode the execution data
         (uint maxFee, uint ttl) = abi.decode(executionData, (uint, uint));
-
         if (ttl == 0) {
             revert
                 IPP_Connext_Crosschain_v1
@@ -179,7 +187,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         // new struct is created for us
 
         // Call newIntent on the EverClearSpoke contract
-        (intentId,) = everClearSpoke.newIntent(
+        (bytes32 intentId) = everClearSpoke.newIntent(
             destinations,
             order.recipient,
             order.paymentToken,
@@ -189,107 +197,87 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             uint48(ttl),
             ""
         );
-
         return intentId;
     }
-
-    /// @notice Allows retrying a failed cross-chain transfer
-    /// @param client The payment client address
-    /// @param recipient The recipient address
-    /// @param failedIntentId The intentId of the failed transfer
-    /// @param executionData New execution data containing maxFee and TTL
-    function retryFailedTransfer(
-        address client,
-        address recipient,
-        bytes32 failedIntentId,
-        bytes memory executionData
-    ) external {
-        uint amount = failedTransfers[client][recipient][failedIntentId];
-        if (amount == 0) {
-            ///@audit - change this to something
-            revert Module__PP_Crosschain__MessageDeliveryFailed(
-                8453, 8453, executionData
-            );
-        }
-
-        // Create new transfer attempt
-        bytes32 newIntentId = createCrossChainIntent(
-            IERC20PaymentClientBase_v1.PaymentOrder({
-                recipient: recipient,
-                paymentToken: address(weth), // Note: You'll need to store the original token
-                amount: amount,
-                start: 0, // Immediate transfer
-                cliff: 0,
-                end: 0
-            }),
-            executionData
-        );
-
-        // Clear the failed transfer record
-        delete failedTransfers[client][recipient][failedIntentId];
-
-        emit FailedTransferRetried(
-            client, recipient, failedIntentId, newIntentId
-        );
-    }
-
     /// @notice Cancels a pending transfer and returns funds to the client
     /// @param client The payment client address
     /// @param recipient The recipient address
     /// @param pendingIntentId The intentId to cancel
+
     function cancelTransfer(
         address client,
         address recipient,
         bytes32 pendingIntentId,
         IERC20PaymentClientBase_v1.PaymentOrder memory order
     ) external {
-        //@audit - change this to something
-        bytes memory randomBytes = new bytes(32);
-        //require the cancel is coming from the creator
-        if (msg.sender != order.recipient) {
-            revert Module__PP_Crosschain__MessageDeliveryFailed(
-                8453, 8453, randomBytes
-            );
+        // Verify the caller is the intended recipient of the transfer
+        if (msg.sender != client) {
+            revert Module__InvalidAddress();
         }
 
-        // Verify the transfer exists
+        // Verify the transfer exists and matches the provided intentId
         if (intentId[client][recipient] != pendingIntentId) {
-            revert Module__PP_Crosschain__MessageDeliveryFailed(
-                8453, 8453, randomBytes
-            );
+            revert Module__PP_Crosschain__InvalidIntentId();
         }
 
+        // Verify the order details by checking if there's a failed transfer record
+        uint failedAmount = failedTransfers[client][recipient][pendingIntentId];
+
+        if (failedAmount == 0) {
+            //@audit - change this to something
+            revert Module__CrossChainBase__InvalidAmount();
+        }
+
+        // Clean up storage
         delete intentId[client][recipient];
+        delete failedTransfers[client][recipient][pendingIntentId];
 
-        uint amount = order.amount;
+        // // Update client's payment records
+        // IERC20PaymentClientBase_v1(client).amountPaid(
+        //     order.paymentToken, order.amount
+        // );
 
-        (bool success,) = order.recipient.call{value: amount}("");
-        if (!success) {
-            revert Module__PP_Crosschain__MessageDeliveryFailed(
-                8453, 8453, randomBytes
-            );
+        // Transfer tokens to the recipient since they are cancelling their own failed transfer
+        if (!IERC20(order.paymentToken).transfer(recipient, order.amount)) {
+            revert FailedTransfer();
         }
 
-        emit TransferCancelled(client, recipient, pendingIntentId);
+        emit TransferCancelled(client, recipient, pendingIntentId, order.amount);
     }
 
-    event TransferFailed(
-        address indexed client,
-        address indexed recipient,
-        bytes32 indexed intentId,
-        uint amount
-    );
+    function retryFailedTransfer(
+        address client,
+        address recipient,
+        bytes32 pendingIntentId,
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) external {
+        //verify the caller is the intended recipient of the transfer
+        if (msg.sender != client) {
+            revert Module__InvalidAddress();
+        }
 
-    event FailedTransferRetried(
-        address indexed client,
-        address indexed recipient,
-        bytes32 indexed oldIntentId,
-        bytes32 newIntentId
-    );
+        //verify the transfer exists and matches the provided intentId
+        if (intentId[client][recipient] != pendingIntentId) {
+            revert Module__PP_Crosschain__InvalidIntentId();
+        }
 
-    event TransferCancelled(
-        address indexed client,
-        address indexed recipient,
-        bytes32 indexed intentId
-    );
+        //verify the order details by checking if there's a failed transfer record
+        uint failedAmount = failedTransfers[client][recipient][pendingIntentId];
+        if (failedAmount == 0) {
+            revert Module__CrossChainBase__InvalidAmount();
+        }
+        //create a new intent with the updated execution data
+        bytes32 newIntentId = createCrossChainIntent(order, executionData);
+        if (newIntentId == bytes32(0)) {
+            revert Module__PP_Crosschain__MessageDeliveryFailed(
+                8453, 8453, executionData
+            );
+        }
+        // delete the failed transfer record
+        delete failedTransfers[client][recipient][pendingIntentId];
+
+        // update the intentId with the new intentId
+        intentId[client][recipient] = newIntentId;
+    }
 }

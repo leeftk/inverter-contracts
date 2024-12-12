@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
+import {console} from "forge-std/console.sol";
+
 contract Mock_EverclearPayment {
     event IntentAdded(bytes32 intentId, uint queuePosition, Intent intent);
 
@@ -39,11 +41,15 @@ contract Mock_EverclearPayment {
         uint24 _maxFee,
         uint48 _ttl,
         bytes calldata _data
-    ) external returns (bytes32 _intentId, Intent memory _intent) {
+    ) external returns (bytes32 _intentId) {
         // Increment nonce for each new intent
         nonce++;
-
-        _intent = Intent({
+        console.log("maxFee", _maxFee);
+        if (_maxFee == 333) {
+            return bytes32(0);
+        }
+        //if data is the word "fail" intentional return bytes32(0)
+        Intent memory _intent = Intent({
             initiator: msg.sender,
             receiver: _to,
             inputAsset: _inputAsset,
@@ -61,10 +67,10 @@ contract Mock_EverclearPayment {
         // Generate a unique intent ID
         _intentId = keccak256(abi.encode(_intent));
 
-        // Set intent status to ADDED and emit the event
+        // // Set intent status to ADDED and emit the event
         status[_intentId] = IntentStatus.ADDED;
         emit IntentAdded(_intentId, nonce, _intent);
-
-        return (_intentId, _intent);
+        console.log("WHYYYYY");
+        return (_intentId);
     }
 }

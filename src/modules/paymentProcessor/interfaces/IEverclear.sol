@@ -10,5 +10,5 @@ interface IEverclearSpoke {
         uint24 maxFee,
         uint48 ttl,
         bytes memory data
-    ) external returns (bytes32 intentId, uint amountOut);
+    ) external returns (bytes32 intentId);
 }
