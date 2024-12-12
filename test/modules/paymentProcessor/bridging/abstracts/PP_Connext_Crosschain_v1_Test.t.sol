@@ -481,46 +481,51 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 └── And clear the failed transfer record
                 └── And emit FailedTransferRetried event
     */
-    function testRetryFailedTransfer_succeeds(address recipient) public {
+    function testRetryFailedTransfer_succeeds() public {
         // Setup
-        address recipient;
+        address recipient = address(0xBEEF);
         uint amount = 1 ether;
 
         // Setup initial payment
-        _setupSinglePayment(recipient, amount);
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _setupSinglePayment(recipient, amount);
 
-        // Process payment first time (this will create an intent)
+        // First attempt with high maxFee to force failure
         paymentProcessor.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+            IERC20PaymentClientBase_v1(address(paymentClient)),
+            abi.encode(333, 1) // maxFee of 333 will cause failure
         );
 
-        // Get the intent ID that was created
-        bytes32 originalIntentId =
-            paymentProcessor.intentId(address(paymentClient), recipient);
-
-        // Simulate a failed transfer by setting it in the failed transfers mapping
-        paymentProcessor.exposed_setFailedTransfer(
-            address(paymentClient), recipient, originalIntentId, amount
-        );
-
-        // // Now retry the failed transfer
-        // paymentProcessor.retryFailedTransfer(
-        //     address(paymentClient), recipient, originalIntentId, executionData
-        // );
-
-        // Verify:
-        // 1. The failed transfer was cleared
+        // Verify failed transfer was recorded
         assertEq(
             paymentProcessor.failedTransfers(
-                address(paymentClient), recipient, originalIntentId
+                address(paymentClient), recipient, bytes32(0)
+            ),
+            orders[0].amount
+        );
+
+        // Now retry with proper execution data
+        vm.prank(address(paymentClient));
+        paymentProcessor.retryFailedTransfer(
+            address(paymentClient),
+            recipient,
+            bytes32(0),
+            orders[0],
+            abi.encode(0, 1) // proper maxFee and ttl
+        );
+
+        // Verify:
+        // 1. Failed transfer record was cleared
+        assertEq(
+            paymentProcessor.failedTransfers(
+                address(paymentClient), recipient, bytes32(0)
             ),
             0
         );
 
-        // 2. A new intent was created (should be different from original)
+        // 2. New intent was created (should be non-zero)
         bytes32 newIntentId =
             paymentProcessor.intentId(address(paymentClient), recipient);
-        assertTrue(newIntentId != originalIntentId);
         assertTrue(newIntentId != bytes32(0));
     }
 

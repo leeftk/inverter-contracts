@@ -44,7 +44,6 @@ contract Mock_EverclearPayment {
     ) external returns (bytes32 _intentId) {
         // Increment nonce for each new intent
         nonce++;
-        console.log("maxFee", _maxFee);
         if (_maxFee == 333) {
             return bytes32(0);
         }
@@ -70,7 +69,7 @@ contract Mock_EverclearPayment {
         // // Set intent status to ADDED and emit the event
         status[_intentId] = IntentStatus.ADDED;
         emit IntentAdded(_intentId, nonce, _intent);
-        console.log("WHYYYYY");
+
         return (_intentId);
     }
 }
