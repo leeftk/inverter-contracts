@@ -9,28 +9,36 @@ import {IERC20PaymentClientBase_v1} from
 import {Module_v1} from "src/modules/base/Module_v1.sol";
 import {ERC165Upgradeable, Module_v1} from "src/modules/base/Module_v1.sol";
 import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
+
 /**
  * @title   Cross-chain Base Contract
- *
- * @notice  Abstract base contract providing core cross-chain functionality for payment processors.
- *
+ * @notice  Abstract base contract providing core cross-chain functionality for payment
+ *          processors.
  * @dev     This contract implements fundamental cross-chain operations and provides:
  *          - Bridge data storage and retrieval functionality
  *          - Abstract interface for bridge transfer execution
  *          - Integration with the Module_v1 base contract
  *          - Implementation of ICrossChainBase_v1 interface
  *          - ERC165 interface support for cross-chain functionality
- *
  * @custom:security-contact security@inverter.network
- *                          In case of any concerns or findings, please refer to our Security Policy
- *                          at security.inverter.network or email us directly!
- *
+ *                          In case of any concerns or findings, please refer to our
+ *                          Security Policy at security.inverter.network or email us
+ *                          directly!
  * @author  Inverter Network
  */
-
 abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
+    // Storage Variables
     mapping(uint => bytes) internal _bridgeData;
 
+    // External Functions
+    /// @notice Process payments for a given payment client
+    /// @param client The payment client to process payments for
+    function processPayments(IERC20PaymentClientBase_v1 client)
+        external
+        virtual
+    {}
+
+    // Public Functions
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_)
         public
@@ -43,25 +51,6 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
             || super.supportsInterface(interfaceId_);
     }
 
-    //--------------------------------------------------------------------------
-    // Virtual Functions
-
-    /// @notice Execute the cross-chain bridge transfer
-    /// @dev Override this function to implement specific bridge logic
-    /// @param order The payment order containing all necessary transfer details
-    /// @return bridgeData Arbitrary data returned by the bridge implementation
-    function _executeBridgeTransfer(
-        IERC20PaymentClientBase_v1.PaymentOrder memory order,
-        bytes memory executionData
-    ) internal virtual returns (bytes memory) {}
-
-    /// @notice Process payments for a given payment client
-    /// @param client The payment client to process payments for
-    function processPayments(IERC20PaymentClientBase_v1 client)
-        external
-        virtual
-    {}
-
     /// @notice Get the bridge data for a given payment ID
     /// @param paymentId The ID of the payment to get the bridge data for
     /// @return The bridge data for the given payment ID
@@ -71,4 +60,14 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
         virtual
         returns (bytes memory)
     {}
+
+    // Internal Functions
+    /// @notice Execute the cross-chain bridge transfer
+    /// @dev Override this function to implement specific bridge logic
+    /// @param order The payment order containing all necessary transfer details
+    /// @return bridgeData Arbitrary data returned by the bridge implementation
+    function _executeBridgeTransfer(
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) internal virtual returns (bytes memory) {}
 }
