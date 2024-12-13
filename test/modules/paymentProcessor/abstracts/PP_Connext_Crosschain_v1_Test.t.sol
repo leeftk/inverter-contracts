@@ -13,7 +13,7 @@ import {PP_Connext_Crosschain_v1} from
 import {CrossChainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
 import {CrossChainBase_v1_Exposed} from
-    "test/modules/paymentProcessor/bridging/abstracts/CrossChainBase_v1_Exposed.sol";
+    "test/modules/paymentProcessor/abstracts/CrossChainBase_v1_Exposed.sol";
 import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {ICrossChainBase_v1} from
@@ -21,10 +21,10 @@ import {ICrossChainBase_v1} from
 import {IPaymentProcessor_v1} from
     "src/modules/paymentProcessor/IPaymentProcessor_v1.sol";
 import {PP_Connext_Crosschain_v1_Exposed} from
-    "test/modules/paymentProcessor/bridging/abstracts/PP_Connext_Crosschain_v1_Exposed.sol";
+    "test/modules/paymentProcessor/abstracts/PP_Connext_Crosschain_v1_Exposed.sol";
 // Tests and Mocks
 import {Mock_EverclearPayment} from
-    "test/modules/paymentProcessor/bridging/abstracts/mocks/Mock_EverclearPayment.sol";
+    "test/modules/paymentProcessor/abstracts/mocks/Mock_EverclearPayment.sol";
 import {
     IERC20PaymentClientBase_v1,
     ERC20PaymentClientBaseV1Mock

@@ -150,7 +150,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     ) external {
         _validateTransferRequest(client, recipient, pendingIntentId);
 
-        bytes32 newIntentId = createCrossChainIntent(order, executionData);
+        bytes32 newIntentId = _createCrossChainIntent(order, executionData);
         if (newIntentId == bytes32(0)) {
             revert Module__PP_Crosschain__MessageDeliveryFailed(
                 8453, 8453, executionData
@@ -189,7 +189,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         bytes memory executionData,
         address client
     ) internal returns (bytes memory) {
-        bytes32 _intentId = createCrossChainIntent(order, executionData);
+        bytes32 _intentId = _createCrossChainIntent(order, executionData);
 
         if (_intentId == bytes32(0)) {
             failedTransfers[client][order.recipient][_intentId] = order.amount;
@@ -208,7 +208,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
      * @param executionData Additional execution parameters
      * @return The ID of the created intent
      */
-    function createCrossChainIntent(
+    function _createCrossChainIntent(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
     ) internal returns (bytes32) {

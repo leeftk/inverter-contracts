@@ -14,12 +14,11 @@ import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
  * @title   Cross-chain Base Contract
  * @notice  Abstract base contract providing core cross-chain functionality for payment
  *          processors.
- * @dev     This contract implements fundamental cross-chain operations and provides:
+ * @dev     This contract exposes fundamental cross-chain operations and provides:
  *          - Bridge data storage and retrieval functionality
  *          - Abstract interface for bridge transfer execution
  *          - Integration with the Module_v1 base contract
  *          - Implementation of ICrossChainBase_v1 interface
- *          - ERC165 interface support for cross-chain functionality
  * @custom:security-contact security@inverter.network
  *                          In case of any concerns or findings, please refer to our
  *                          Security Policy at security.inverter.network or email us
