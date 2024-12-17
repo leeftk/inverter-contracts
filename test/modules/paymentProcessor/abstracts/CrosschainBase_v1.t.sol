@@ -17,7 +17,8 @@ import {
     ERC20PaymentClientBaseV1Mock,
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
-import {CrossChainBase_v1_Exposed} from "./CrossChainBase_v1_Exposed.sol";
+import {CrossChainBase_v1_Exposed} from
+    "test/utils/mocks/external/CrossChainBase_v1_Exposed.sol";
 
 import {IPaymentProcessor_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
