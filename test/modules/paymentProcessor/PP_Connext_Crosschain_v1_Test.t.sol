@@ -29,9 +29,9 @@ import {IERC20PaymentClientBase_v1} from
 
 // Tests and Mocks
 import {CrossChainBase_v1_Exposed} from
-    "test/utils/mocks/external/CrossChainBase_v1_Exposed.sol";
+    "test/utils/mocks/modules/paymentProcessor/CrossChainBase_v1_Exposed.sol";
 import {PP_Connext_Crosschain_v1_Exposed} from
-    "test/utils/mocks/external/PP_Connext_Crosschain_v1_Exposed.sol";
+    "test/utils/mocks/modules/paymentProcessor/PP_Connext_Crosschain_v1_Exposed.sol";
 import {Mock_EverclearPayment} from
     "test/utils/mocks/external/Mock_EverclearPayment.sol";
 import {
