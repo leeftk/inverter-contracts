@@ -10,8 +10,8 @@ import {
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
-import {CrosschainBase_v1} from
-    "src/modules/paymentProcessor/abstracts/CrosschainBase_v1.sol";
+import {CrossChainBase_v1} from
+    "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
 //External Dependencies
 import {Clones} from "@oz/proxy/Clones.sol";
 
