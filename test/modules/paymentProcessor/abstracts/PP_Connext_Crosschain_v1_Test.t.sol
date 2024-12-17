@@ -2,68 +2,72 @@
 
 pragma solidity ^0.8.20;
 
+//--------------------------------------------------------------------------
+// Imports
+
 // External Dependencies
 import {Test} from "forge-std/Test.sol";
 import {Clones} from "@oz/proxy/Clones.sol";
+import {IERC20Errors} from "@oz/interfaces/draft-IERC6093.sol";
+import {IWETH} from "src/modules/paymentProcessor/interfaces/IWETH.sol";
+import "forge-std/console2.sol";
 
 // Internal Dependencies
 import {PP_Connext_Crosschain_v1} from
     "src/modules/paymentProcessor/PP_Connext_Crosschain_v1.sol";
-
 import {CrossChainBase_v1} from
     "src/modules/paymentProcessor/abstracts/CrossChainBase_v1.sol";
-import {CrossChainBase_v1_Exposed} from
-    "test/modules/paymentProcessor/abstracts/CrossChainBase_v1_Exposed.sol";
-import {IERC20PaymentClientBase_v1} from
-    "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 import {ICrossChainBase_v1} from
     "src/modules/paymentProcessor/interfaces/ICrosschainBase_v1.sol";
 import {IPaymentProcessor_v1} from
     "src/modules/paymentProcessor/IPaymentProcessor_v1.sol";
+import {IPP_Crosschain_v1} from
+    "src/modules/paymentProcessor/interfaces/IPP_Crosschain_v1.sol";
+import {IModule_v1, IOrchestrator_v1} from "src/modules/base/IModule_v1.sol";
+import {IERC20PaymentClientBase_v1} from
+    "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
+
+// Tests and Mocks
+import {CrossChainBase_v1_Exposed} from
+    "test/modules/paymentProcessor/abstracts/CrossChainBase_v1_Exposed.sol";
 import {PP_Connext_Crosschain_v1_Exposed} from
     "test/modules/paymentProcessor/abstracts/PP_Connext_Crosschain_v1_Exposed.sol";
-// Tests and Mocks
 import {Mock_EverclearPayment} from
     "test/modules/paymentProcessor/abstracts/mocks/Mock_EverclearPayment.sol";
 import {
     IERC20PaymentClientBase_v1,
     ERC20PaymentClientBaseV1Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
-import {
-    ModuleTest,
-    IModule_v1,
-    IOrchestrator_v1
-} from "test/modules/ModuleTest.sol";
+import {ModuleTest} from "test/modules/ModuleTest.sol";
 import {OZErrors} from "test/utils/errors/OZErrors.sol";
-import {IERC20Errors} from "@oz/interfaces/draft-IERC6093.sol";
-import {IWETH} from "src/modules/paymentProcessor/interfaces/IWETH.sol";
-import "forge-std/console2.sol";
-import {IPP_Crosschain_v1} from
-    "src/modules/paymentProcessor/interfaces/IPP_Crosschain_v1.sol";
-
-import {IModule_v1, IOrchestrator_v1} from "src/modules/base/IModule_v1.sol";
 
 contract PP_Connext_Crosschain_v1_Test is ModuleTest {
+    //--------------------------------------------------------------------------
+    // Constants
+    uint constant MINTED_SUPPLY = 1000 ether;
+
+    //--------------------------------------------------------------------------
+    // Test Storage
     PP_Connext_Crosschain_v1_Exposed public paymentProcessor;
     Mock_EverclearPayment public everclearPaymentMock;
     ERC20PaymentClientBaseV1Mock paymentClient;
     IPP_Crosschain_v1 public crossChainBase;
-
     IWETH public weth;
-
     uint public chainId;
 
-    // Add these as contract state variables
+    // Bridge-related storage
     address public mockConnextBridge;
     address public mockEverClearSpoke;
     address public mockWeth;
 
+    // Execution data storage
     uint maxFee = 0;
     uint ttl = 1;
     bytes executionData;
     bytes invalidExecutionData;
 
-    uint constant MINTED_SUPPLY = 1000 ether;
+    //--------------------------------------------------------------------------
+    // Setup Function
 
     function setUp() public {
         // Set chain ID for test environment
@@ -104,6 +108,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         _setupInitialBalances();
     }
 
+    //--------------------------------------------------------------------------
+    // Initialization Tests
+
     /* Test initialization
     */
     function testInit() public override(ModuleTest) {
@@ -137,6 +144,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectRevert(OZErrors.Initializable__InvalidInitialization);
         paymentProcessor.init(_orchestrator, _METADATA, abi.encode(1));
     }
+
+    //--------------------------------------------------------------------------
+    // Payment Processing Tests
 
     /* Test single payment processing
     └── Given single valid payment order
@@ -266,6 +276,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             bytes32(0)
         );
     }
+
+    //--------------------------------------------------------------------------
+    // Error Case Tests
 
     /* Test invalid execution data
         └── When processing with invalid Connext parameters
@@ -628,7 +641,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
     }
 
-    // Helper functions
+    //--------------------------------------------------------------------------
+    // Helper Functions
 
     function _setupSinglePayment(address _recipient, uint _amount)
         internal

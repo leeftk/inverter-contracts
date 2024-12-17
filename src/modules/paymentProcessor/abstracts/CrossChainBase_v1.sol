@@ -23,7 +23,9 @@ import {ICrossChainBase_v1} from "../interfaces/ICrosschainBase_v1.sol";
  *                          In case of any concerns or findings, please refer to our
  *                          Security Policy at security.inverter.network or email us
  *                          directly!
- * @author  Inverter Network
+ * @custom:version 1.0.0
+ * @custom:standard-version 1.0.0
+ * @author  33Audits
  */
 abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     // Storage Variables

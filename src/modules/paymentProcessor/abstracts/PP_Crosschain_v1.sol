@@ -39,19 +39,32 @@ import {IPP_Crosschain_v1} from "../interfaces/IPP_Crosschain_v1.sol";
  *                          at security.inverter.network or email us directly!
  *
  * @author  Inverter Network
+ * @custom:version 1.0.0
+ * @custom:standard-version 1.0.0
  */
 abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
-    /// @inheritdoc ERC165Upgradeable
-    function supportsInterface(bytes4 interfaceId_)
-        public
-        view
-        virtual
-        override(CrossChainBase_v1)
-        returns (bool)
-    {
-        return interfaceId_ == type(IPP_Crosschain_v1).interfaceId
-            || super.supportsInterface(interfaceId_);
-    }
+    //--------------------------------------------------------------------------
+    // Events
+    event PaymentProcessed(uint indexed paymentId, address indexed client);
+    event PaymentCancelled(uint indexed paymentId, address indexed client);
+    event UnclaimablePaymentClaimed(
+        address indexed client,
+        address indexed token,
+        address indexed receiver,
+        uint amount
+    );
+
+    //--------------------------------------------------------------------------
+    // Constants
+    uint public constant VERSION = 1;
+
+    //--------------------------------------------------------------------------
+    // Storage Variables
+    bytes public executionData;
+    uint public _paymentId;
+
+    /// @dev    Gap for possible future upgrades.
+    uint[50] private __gap;
 
     //--------------------------------------------------------------------------
     // Modifiers
@@ -73,18 +86,19 @@ abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
     }
 
     //--------------------------------------------------------------------------
-    // Storage
+    // External/Public Functions
 
-    bytes public executionData;
-
-    /// @dev    Gap for possible future upgrades.
-    uint[50] private __gap;
-
-    //@dev paymentId
-    uint public _paymentId;
-
-    //--------------------------------------------------------------------------
-    // Virtual Functions
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId_)
+        public
+        view
+        virtual
+        override(CrossChainBase_v1)
+        returns (bool)
+    {
+        return interfaceId_ == type(IPP_Crosschain_v1).interfaceId
+            || super.supportsInterface(interfaceId_);
+    }
 
     /// @notice Process payments for a given payment client
     /// @param client The payment client to process payments for
@@ -134,6 +148,9 @@ abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
             && _validPaymentToken(order.paymentToken);
     }
 
+    //--------------------------------------------------------------------------
+    // Internal Functions
+
     /// @dev    Validate address input.
     /// @param  addr Address to validate.
     /// @return True if address is valid.
@@ -162,8 +179,6 @@ abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
         pure
         returns (bool)
     {
-        // _start + _cliff should be less or equal to _end
-        // this already implies that _start is not greater than _end
         return _start + _cliff <= _end;
     }
 
@@ -171,9 +186,6 @@ abstract contract PP_Crosschain_v1 is CrossChainBase_v1, IPP_Crosschain_v1 {
     /// @param  _token Address of the token to validate.
     /// @return True if address is valid.
     function _validPaymentToken(address _token) internal returns (bool) {
-        // Only a basic sanity check that the address supports the balanceOf() function. The corresponding
-        // module should ensure it's sending an ERC20.
-
         (bool success, bytes memory data) = _token.call(
             abi.encodeWithSelector(
                 IERC20(_token).balanceOf.selector, address(this)
