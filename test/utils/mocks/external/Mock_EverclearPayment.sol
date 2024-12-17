@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {console} from "forge-std/console.sol";
-
 contract Mock_EverclearPayment {
     event IntentAdded(bytes32 intentId, uint queuePosition, Intent intent);
 
