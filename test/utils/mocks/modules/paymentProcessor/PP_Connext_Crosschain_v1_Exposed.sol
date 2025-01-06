@@ -26,7 +26,7 @@ contract PP_Connext_Crosschain_v1_Exposed is PP_Connext_Crosschain_v1 {
     function exposed_setFailedTransfer(
         address client,
         address recipient,
-        bytes32 intentId,
+        bytes memory intentId,
         uint amount
     ) external {
         failedTransfers[client][recipient][intentId] = amount;

@@ -68,5 +68,5 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal virtual returns (bytes memory)
+    ) internal virtual returns (bytes memory);
 }

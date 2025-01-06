@@ -8,8 +8,28 @@ import {IERC20PaymentClientBase_v1} from
     "@lm/interfaces/IERC20PaymentClientBase_v1.sol";
 
 contract CrossChainBase_v1_Exposed is CrossChainBase_v1 {
-    constructor(uint chainId_) CrossChainBase_v1() {}
     ///// @inheritdoc CrossChainBase_v1
+
+    function _executeBridgeTransfer(
+        IERC20PaymentClientBase_v1.PaymentOrder memory order,
+        bytes memory executionData
+    ) internal pure override returns (bytes memory) {
+        return "";
+    }
+
+    function getBridgeData(uint paymentId)
+        public
+        pure
+        override
+        returns (bytes memory)
+    {
+        return "";
+    }
+
+    function processPayments(IERC20PaymentClientBase_v1 client)
+        external
+        override
+    {}
 
     function exposed_executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,

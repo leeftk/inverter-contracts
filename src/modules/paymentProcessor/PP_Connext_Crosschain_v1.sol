@@ -50,7 +50,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     mapping(
         address paymentClient
             => mapping(
-                address recipient => mapping(bytes32 intentId => uint amount)
+                address recipient => mapping(bytes intentId => uint amount)
             )
     ) public failedTransfers;
 
@@ -88,25 +88,38 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     ) external {
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders;
         (orders,,) = client.collectPaymentOrders();
-
+        address clientAddress = address(client);
         for (uint i = 0; i < orders.length; i++) {
-            bytes memory bridgeData = _executeBridgeTransfer(
-                orders[i], executionData, address(client)
-            );
+            bytes memory bridgeData =
+                _executeBridgeTransfer(orders[i], executionData);
 
-            _bridgeData[i] = bridgeData;
-            emit PaymentOrderProcessed(
-                address(client),
-                orders[i].recipient,
-                orders[i].paymentToken,
-                orders[i].amount,
-                orders[i].start,
-                orders[i].cliff,
-                orders[i].end
-            );
-            _paymentId++;
-            intentId[address(client)][orders[i].recipient] = bytes32(bridgeData);
-            client.amountPaid(orders[i].paymentToken, orders[i].amount);
+            if (bytes32(bridgeData) == bytes32(0)) {
+                // Handle failed transfer
+                failedTransfers[clientAddress][orders[i].recipient][executionData]
+                = orders[i].amount;
+                emit TransferFailed(
+                    clientAddress,
+                    orders[i].recipient,
+                    executionData,
+                    orders[i].amount
+                );
+            } else {
+                // Handle successful transfer
+                _bridgeData[i] = bridgeData;
+                emit PaymentOrderProcessed(
+                    address(client),
+                    orders[i].recipient,
+                    orders[i].paymentToken,
+                    orders[i].amount,
+                    orders[i].start,
+                    orders[i].cliff,
+                    orders[i].end
+                );
+                _paymentId++;
+                intentId[address(client)][orders[i].recipient] =
+                    bytes32(bridgeData);
+                client.amountPaid(orders[i].paymentToken, orders[i].amount);
+            }
         }
     }
 
@@ -114,50 +127,49 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
      * @notice Cancels a pending transfer and returns funds to the client
      * @param client The payment client address
      * @param recipient The recipient address
-     * @param pendingIntentId The intentId to cancel
+     * @param executionData The execution data to cancel
      * @param order The payment order details
      */
     function cancelTransfer(
         address client,
         address recipient,
-        bytes32 pendingIntentId,
+        bytes memory executionData,
         IERC20PaymentClientBase_v1.PaymentOrder memory order
     ) external {
-        _validateTransferRequest(client, recipient, pendingIntentId);
-        _cleanupFailedTransfer(client, recipient, pendingIntentId);
+        _validateTransferRequest(client, recipient, executionData);
+        _cleanupFailedTransfer(client, recipient, executionData);
 
         if (!IERC20(order.paymentToken).transfer(recipient, order.amount)) {
             revert FailedTransfer();
         }
 
-        emit TransferCancelled(client, recipient, pendingIntentId, order.amount);
+        emit TransferCancelled(client, recipient, executionData, order.amount);
     }
 
     /**
      * @notice Retries a previously failed transfer
      * @param client The payment client address
      * @param recipient The recipient address
-     * @param pendingIntentId The failed intent ID
      * @param order The payment order details
      * @param executionData New execution data for retry
      */
     function retryFailedTransfer(
         address client,
         address recipient,
-        bytes32 pendingIntentId,
-        IERC20PaymentClientBase_v1.PaymentOrder memory order,
-        bytes memory executionData
+        bytes memory executionData,
+        bytes memory newExecutionData,
+        IERC20PaymentClientBase_v1.PaymentOrder memory order
     ) external {
-        _validateTransferRequest(client, recipient, pendingIntentId);
+        _validateTransferRequest(client, recipient, executionData);
 
-        bytes32 newIntentId = _createCrossChainIntent(order, executionData);
+        bytes32 newIntentId = _createCrossChainIntent(order, newExecutionData);
         if (newIntentId == bytes32(0)) {
             revert Module__PP_Crosschain__MessageDeliveryFailed(
                 8453, 8453, executionData
             );
         }
 
-        _cleanupFailedTransfer(client, recipient, pendingIntentId);
+        _cleanupFailedTransfer(client, recipient, executionData);
         intentId[client][recipient] = newIntentId;
     }
 
@@ -181,24 +193,13 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
      * @dev Execute the cross-chain bridge transfer
      * @param order The payment order containing transfer details
      * @param executionData Additional execution parameters
-     * @param client The client address
      * @return bridgeData Data returned by the bridge implementation
      */
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
-        bytes memory executionData,
-        address client
-    ) internal returns (bytes memory) {
+        bytes memory executionData
+    ) internal override returns (bytes memory) {
         bytes32 _intentId = _createCrossChainIntent(order, executionData);
-
-        if (_intentId == bytes32(0)) {
-            failedTransfers[client][order.recipient][_intentId] = order.amount;
-            intentId[client][order.recipient] = _intentId;
-            emit TransferFailed(
-                client, order.recipient, _intentId, order.amount
-            );
-        }
-
         return abi.encode(_intentId);
     }
 
@@ -252,23 +253,18 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
      * @dev Validates a transfer request
      * @param client The payment client address
      * @param recipient The recipient address
-     * @param pendingIntentId The intent ID to validate
-     * @return The amount of the failed transfer
+     * @param executionData The execution data
      */
     function _validateTransferRequest(
         address client,
         address recipient,
-        bytes32 pendingIntentId
+        bytes memory executionData
     ) internal view returns (uint) {
         if (msg.sender != client) {
             revert Module__InvalidAddress();
         }
 
-        if (intentId[client][recipient] != pendingIntentId) {
-            revert Module__PP_Crosschain__InvalidIntentId();
-        }
-
-        uint failedAmount = failedTransfers[client][recipient][pendingIntentId];
+        uint failedAmount = failedTransfers[client][recipient][executionData];
         if (failedAmount == 0) {
             revert Module__CrossChainBase__InvalidAmount();
         }
@@ -280,15 +276,15 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
      * @dev Cleans up storage after handling a failed transfer
      * @param client The payment client address
      * @param recipient The recipient address
-     * @param pendingIntentId The intent ID to clean up
+     * @param executionData The execution data
      */
     function _cleanupFailedTransfer(
         address client,
         address recipient,
-        bytes32 pendingIntentId
+        bytes memory executionData
     ) internal {
         delete intentId[client][recipient];
-        delete failedTransfers[client][recipient][pendingIntentId];
+        delete failedTransfers[client][recipient][executionData];
     }
 
     /**

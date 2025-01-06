@@ -41,7 +41,7 @@ contract CrossChainBase_v1_Test is ModuleTest {
     function setUp() public {
         //This function is used to setup the unit test
         //Deploy the SuT
-        address impl = address(new CrossChainBase_v1_Exposed(block.chainid));
+        address impl = address(new CrossChainBase_v1_Exposed());
         crossChainBase = CrossChainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test

@@ -13,12 +13,12 @@ interface IPP_Crosschain_v1 is IPaymentProcessor_v1 {
     /// @notice Emitted when a cross-chain transfer fails to complete
     /// @param client The address initiating the transfer
     /// @param recipient The intended recipient of the transfer
-    /// @param intentId The unique identifier for this transfer attempt
+    /// @param executionData The unique identifier for this transfer attempt
     /// @param amount The amount that failed to transfer
     event TransferFailed(
         address indexed client,
         address indexed recipient,
-        bytes32 indexed intentId,
+        bytes indexed executionData,
         uint amount
     );
 
@@ -42,7 +42,7 @@ interface IPP_Crosschain_v1 is IPaymentProcessor_v1 {
     event TransferCancelled(
         address indexed client,
         address indexed recipient,
-        bytes32 indexed intentId,
+        bytes indexed intentId,
         uint amount
     );
 

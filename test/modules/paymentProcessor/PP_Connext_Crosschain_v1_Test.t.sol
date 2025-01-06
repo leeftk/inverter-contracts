@@ -508,16 +508,21 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             _setupSinglePayment(recipient, amount);
 
+        // Store the initial execution data that will fail
+        bytes memory failingExecutionData = abi.encode(333, 1); // maxFee of 333 will cause failure
+
         // First attempt with high maxFee to force failure
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)),
-            abi.encode(333, 1) // maxFee of 333 will cause failure
+            failingExecutionData
         );
 
-        // Verify failed transfer was recorded
+        // Verify failed transfer was recorded with the failing execution data
         assertEq(
             paymentProcessor.failedTransfers(
-                address(paymentClient), recipient, bytes32(0)
+                address(paymentClient),
+                recipient,
+                failingExecutionData // Use the same execution data that was used in processPayments
             ),
             orders[0].amount
         );
@@ -527,16 +532,18 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.retryFailedTransfer(
             address(paymentClient),
             recipient,
-            bytes32(0),
-            orders[0],
-            abi.encode(0, 1) // proper maxFee and ttl
+            failingExecutionData, // Old execution data that failed
+            executionData, // New execution data for retry
+            orders[0]
         );
 
         // Verify:
         // 1. Failed transfer record was cleared
         assertEq(
             paymentProcessor.failedTransfers(
-                address(paymentClient), recipient, bytes32(0)
+                address(paymentClient),
+                recipient,
+                failingExecutionData // Check using the original failing execution data
             ),
             0
         );
@@ -564,30 +571,28 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
             _setupSinglePayment(recipient, amount);
         paymentClient.addPaymentOrder(orders[0]);
+        bytes memory executionData = abi.encode(333, 1);
         //call processPayments with maxFee = 333
         paymentProcessor.processPayments(
-            IERC20PaymentClientBase_v1(address(paymentClient)),
-            abi.encode(333, 1)
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
-        console2.log("Fucker who seneeed", address(this));
         // see if failed failedTransfers updates
         assertEq(
             paymentProcessor.failedTransfers(
-                address(paymentClient), recipient, bytes32(0)
+                address(paymentClient), recipient, executionData
             ),
             orders[0].amount
         );
 
         uint failedIntentId = paymentProcessor.failedTransfers(
-            address(paymentClient), recipient, bytes32(0)
+            address(paymentClient), recipient, executionData
         );
-        console2.log("AMOUNT", failedIntentId);
         assertEq(failedIntentId, orders[0].amount);
 
         // Cancel as recipient
         vm.prank(address(paymentClient));
         paymentProcessor.cancelTransfer(
-            address(paymentClient), recipient, bytes32(0), orders[0]
+            address(paymentClient), recipient, executionData, orders[0]
         );
 
         // Verify intentId was cleared
@@ -637,7 +642,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         vm.expectRevert(IModule_v1.Module__InvalidAddress.selector);
         paymentProcessor.cancelTransfer(
-            address(paymentClient), testRecipient, pendingIntentId, order
+            address(paymentClient), testRecipient, executionData, order
         );
     }
 
