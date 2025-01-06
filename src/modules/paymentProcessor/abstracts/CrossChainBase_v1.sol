@@ -36,8 +36,7 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     /// @param client The payment client to process payments for
     function processPayments(IERC20PaymentClientBase_v1 client)
         external
-        virtual
-    {}
+        virtual;
 
     // Public Functions
     /// @inheritdoc ERC165Upgradeable
@@ -59,8 +58,7 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
         public
         view
         virtual
-        returns (bytes memory)
-    {}
+        returns (bytes memory);
 
     // Internal Functions
     /// @notice Execute the cross-chain bridge transfer
@@ -70,5 +68,5 @@ abstract contract CrossChainBase_v1 is ICrossChainBase_v1, Module_v1 {
     function _executeBridgeTransfer(
         IERC20PaymentClientBase_v1.PaymentOrder memory order,
         bytes memory executionData
-    ) internal virtual returns (bytes memory) {}
+    ) internal virtual returns (bytes memory)
 }
