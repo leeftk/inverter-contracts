@@ -151,7 +151,8 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
      * @param client The payment client address
      * @param recipient The recipient address
      * @param order The payment order details
-     * @param executionData New execution data for retry
+     * @param executionData Old execution data that failed
+     * @param newExecutionData New execution data for retry
      */
     function retryFailedTransfer(
         address client,
@@ -260,13 +261,18 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         address recipient,
         bytes memory executionData
     ) internal view returns (uint) {
+        //msg.sender should be the client
         if (msg.sender != client) {
             revert Module__InvalidAddress();
         }
-
+        //failedAmount should be stored if the transfer has failed
         uint failedAmount = failedTransfers[client][recipient][executionData];
         if (failedAmount == 0) {
             revert Module__CrossChainBase__InvalidAmount();
+        }
+        //intentId should be 0 if the transfer has not been processed yet
+        if (intentId[client][recipient] != bytes32(0)) {
+            revert Module__PP_Crosschain__InvalidIntentId();
         }
 
         return failedAmount;
