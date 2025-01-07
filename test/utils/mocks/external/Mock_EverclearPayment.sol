@@ -6,12 +6,14 @@ contract Mock_EverclearPayment {
 
     uint public nonce;
     uint32 public DOMAIN;
+    IntentStatus public nextIntentStatus;
     mapping(bytes32 => IntentStatus) public status;
 
     enum IntentStatus {
         NONE,
         ADDED,
         SETTLED,
+        FAILED,
         SETTLED_AND_MANUALLY_EXECUTED
     }
 
@@ -69,5 +71,9 @@ contract Mock_EverclearPayment {
         emit IntentAdded(_intentId, nonce, _intent);
 
         return (_intentId);
+    }
+
+    function setNextIntentStatus(IntentStatus _status) external {
+        nextIntentStatus = _status;
     }
 }

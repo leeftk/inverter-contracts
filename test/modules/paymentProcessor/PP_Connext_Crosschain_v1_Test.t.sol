@@ -584,10 +584,10 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             orders[0].amount
         );
 
-        uint failedIntentId = paymentProcessor.failedTransfers(
+        uint failedAmount = paymentProcessor.failedTransfers(
             address(paymentClient), recipient, executionData
         );
-        assertEq(failedIntentId, orders[0].amount);
+        assertEq(failedAmount, orders[0].amount);
 
         // Cancel as recipient
         vm.prank(address(paymentClient));
@@ -643,6 +643,124 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectRevert(IModule_v1.Module__InvalidAddress.selector);
         paymentProcessor.cancelTransfer(
             address(paymentClient), testRecipient, executionData, order
+        );
+    }
+
+    /* Test TTL validation
+    └── Given execution data with zero TTL
+        └── When processing payments
+            └── Then it should revert with InvalidTTL
+    */
+    function testProcessPayments_revertsWithZeroTTL(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
+        _setupSinglePayment(testRecipient, testAmount);
+
+        bytes memory zeroTTLData = abi.encode(maxFee, 0);
+        vm.expectRevert();
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), zeroTTLData
+        );
+    }
+
+    /* Test retry with invalid client
+    └── Given a retry request from non-client address
+        └── When retrying failed transfer
+            └── Then it should revert with InvalidAddress
+    */
+    function testRetryFailedTransfer_revertsWithInvalidCaller(
+        address testRecipient,
+        uint testAmount,
+        address invalidCaller
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+        vm.assume(invalidCaller != address(paymentClient));
+
+        // Setup failed transfer
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _setupSinglePayment(testRecipient, testAmount);
+
+        bytes memory failingExecutionData = abi.encode(333, 1);
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)),
+            failingExecutionData
+        );
+
+        // Attempt retry from invalid caller
+        vm.prank(invalidCaller);
+        vm.expectRevert(IModule_v1.Module__InvalidAddress.selector);
+        paymentProcessor.retryFailedTransfer(
+            address(paymentClient),
+            testRecipient,
+            failingExecutionData,
+            executionData,
+            orders[0]
+        );
+    }
+
+    /* Test retry with no failed transfer record
+    └── Given a retry request for non-existent failed transfer
+        └── When retrying transfer
+            └── Then it should revert with InvalidAmount
+    */
+    function testRetryFailedTransfer_revertsWithNoFailedTransfer(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _setupSinglePayment(testRecipient, testAmount);
+
+        vm.prank(address(paymentClient));
+        vm.expectRevert(
+            ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount.selector
+        );
+        paymentProcessor.retryFailedTransfer(
+            address(paymentClient),
+            testRecipient,
+            executionData,
+            executionData,
+            orders[0]
+        );
+    }
+
+    /* Test retry with existing intent
+    └── Given a retry request when intent already exists
+        └── When retrying transfer
+            └── Then it should revert with InvalidIntentId
+    */
+    function testRetryFailedTransfer_revertsWithExistingIntent(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
+        // Setup initial payment and process it
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _setupSinglePayment(testRecipient, testAmount);
+
+        // Create a successful intent first
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+
+        // Now try to retry (should fail because intent exists)
+        vm.prank(address(paymentClient));
+        vm.expectRevert();
+        paymentProcessor.retryFailedTransfer(
+            address(paymentClient),
+            testRecipient,
+            executionData,
+            executionData,
+            orders[0]
         );
     }
 
