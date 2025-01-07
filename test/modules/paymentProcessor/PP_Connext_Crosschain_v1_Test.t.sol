@@ -181,8 +181,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Process payments
         paymentProcessor.processPayments(client, executionData);
-        bytes32 intentId =
-            paymentProcessor.intentId(address(paymentClient), testRecipient);
+        bytes32 intentId = paymentProcessor.processedIntentId(
+            address(paymentClient), testRecipient
+        );
         assertEq(
             uint(everclearPaymentMock.status(intentId)),
             uint(Mock_EverclearPayment.IntentStatus.ADDED)
@@ -247,7 +248,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.processPayments(client, executionData);
         //should be checking in the mock for valid bridge data
         for (uint i = 0; i < numRecipients; i++) {
-            bytes32 intentId = paymentProcessor.intentId(
+            bytes32 intentId = paymentProcessor.processedIntentId(
                 address(paymentClient), setupRecipients[i]
             );
             assertEq(
@@ -272,7 +273,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             "Bridge data should be empty"
         );
         assertEq(
-            paymentProcessor.intentId(address(paymentClient), address(0)),
+            paymentProcessor.processedIntentId(
+                address(paymentClient), address(0)
+            ),
             bytes32(0)
         );
     }
@@ -549,8 +552,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         );
 
         // 2. New intent was created (should be non-zero)
-        bytes32 newIntentId =
-            paymentProcessor.intentId(address(paymentClient), recipient);
+        bytes32 newIntentId = paymentProcessor.processedIntentId(
+            address(paymentClient), recipient
+        );
         assertTrue(newIntentId != bytes32(0));
     }
 
@@ -597,7 +601,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Verify intentId was cleared
         assertEq(
-            paymentProcessor.intentId(address(paymentClient), recipient),
+            paymentProcessor.processedIntentId(
+                address(paymentClient), recipient
+            ),
             bytes32(0)
         );
     }
@@ -623,8 +629,9 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
 
-        bytes32 pendingIntentId =
-            paymentProcessor.intentId(address(paymentClient), testRecipient);
+        bytes32 pendingIntentId = paymentProcessor.processedIntentId(
+            address(paymentClient), testRecipient
+        );
 
         // Create payment order for cancellation
         IERC20PaymentClientBase_v1.PaymentOrder memory order =

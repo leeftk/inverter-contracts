@@ -43,7 +43,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
     ///      paymentClient => paymentReceiver => intentId.
     mapping(
         address paymentClient => mapping(address recipient => bytes32 intentId)
-    ) public intentId;
+    ) public processedIntentId;
 
     /// @dev Tracks failed transfers that can be retried
     ///      paymentClient => recipient => intentId => amount
@@ -116,7 +116,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
                     orders[i].end
                 );
                 _paymentId++;
-                intentId[address(client)][orders[i].recipient] =
+                processedIntentId[address(client)][orders[i].recipient] =
                     bytes32(bridgeData);
                 client.amountPaid(orders[i].paymentToken, orders[i].amount);
             }
@@ -171,7 +171,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         }
 
         _cleanupFailedTransfer(client, recipient, executionData);
-        intentId[client][recipient] = newIntentId;
+        processedIntentId[client][recipient] = newIntentId;
     }
 
     // Public Functions
@@ -271,7 +271,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             revert Module__CrossChainBase__InvalidAmount();
         }
         //intentId should be 0 if the transfer has not been processed yet
-        if (intentId[client][recipient] != bytes32(0)) {
+        if (processedIntentId[client][recipient] != bytes32(0)) {
             revert Module__PP_Crosschain__InvalidIntentId();
         }
 
@@ -289,7 +289,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
         address recipient,
         bytes memory executionData
     ) internal {
-        delete intentId[client][recipient];
+        delete processedIntentId[client][recipient];
         delete failedTransfers[client][recipient][executionData];
     }
 
