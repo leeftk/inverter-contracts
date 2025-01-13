@@ -45,7 +45,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     // Constants
     uint constant MINTED_SUPPLY = 1000 ether;
-
+    uint constant ZERO_AMOUNT = 0;
     //--------------------------------------------------------------------------
     // Test Storage
     PP_Connext_Crosschain_v1_Exposed public paymentProcessor;
@@ -552,6 +552,24 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             address(paymentClient), recipient
         );
         assertTrue(newIntentId != bytes32(0));
+
+        // uint processorBalanceBefore =
+        //     _token.balanceOf(address(paymentProcessor));
+
+        // assertEq(
+        //     paymentProcessor.failedTransfers(
+        //         address(paymentClient), recipient, failingExecutionData
+        //     ),
+        //     0
+        // );
+
+        // bytes32 newIntentId = paymentProcessor.processedIntentId(
+        //     address(paymentClient), recipient
+        // );
+        // assertEq(
+        //     uint(everclearPaymentMock.status(newIntentId)),
+        //     uint(Mock_EverclearPayment.IntentStatus.ADDED)
+        // );
     }
 
     /* Test cancel transfer
@@ -789,6 +807,34 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 amount
             )
         );
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+    }
+
+    /* Test payment processing with zero token balance
+    └── Given payment processor has zero token balance
+        └── When processing payments
+            └── Then it should revert with ERC20InsufficientBalance
+    */
+    function testProcessPayments_revertsWithZeroBalance(
+        address testRecipient,
+        address clearAddress,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+        vm.assume(clearAddress != address(0));
+
+        // Clear processor balance
+        vm.prank(address(paymentProcessor));
+        assertGt(_token.balanceOf(address(paymentProcessor)), ZERO_AMOUNT);
+        _token.transfer(
+            clearAddress, _token.balanceOf(address(paymentProcessor))
+        );
+        _setupSinglePayment(testRecipient, testAmount);
+
+        vm.expectRevert();
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
