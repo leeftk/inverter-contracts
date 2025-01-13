@@ -17,7 +17,8 @@ import {
     ERC20PaymentClientBaseV1Mock,
     ERC20Mock
 } from "test/utils/mocks/modules/paymentClient/ERC20PaymentClientBaseV1Mock.sol";
-import {CrossChainBase_v1_Exposed} from "./CrossChainBase_v1_Exposed.sol";
+import {CrossChainBase_v1_Exposed} from
+    "test/utils/mocks/modules/paymentProcessor/CrossChainBase_v1_Exposed.sol";
 
 import {IPaymentProcessor_v1} from
     "src/orchestrator/interfaces/IOrchestrator_v1.sol";
@@ -40,7 +41,7 @@ contract CrossChainBase_v1_Test is ModuleTest {
     function setUp() public {
         //This function is used to setup the unit test
         //Deploy the SuT
-        address impl = address(new CrossChainBase_v1_Exposed(block.chainid));
+        address impl = address(new CrossChainBase_v1_Exposed());
         crossChainBase = CrossChainBase_v1_Exposed(Clones.clone(impl));
 
         //Setup the module to test

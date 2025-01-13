@@ -53,7 +53,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     ERC20PaymentClientBaseV1Mock paymentClient;
     IPP_Crosschain_v1 public crossChainBase;
     IWETH public weth;
-    uint public chainId;
 
     // Bridge-related storage
     address public mockConnextBridge;
@@ -70,9 +69,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     // Setup Function
 
     function setUp() public {
-        // Set chain ID for test environment
-        chainId = block.chainid;
-
         // Prepare execution data for bridge operations
         executionData = abi.encode(maxFee, ttl);
         invalidExecutionData = abi.encode(address(0));
@@ -768,6 +764,33 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             executionData,
             executionData,
             orders[0]
+        );
+    }
+
+    /* Test process payments without token approval
+    └── Given a payment order with zero approval
+        └── When attempting to process payment
+            └── Then it should revert with InvalidTokenApproval
+    */
+    function testProcessPayments_revertsWithoutTokenApproval() public {
+        // Reset approval
+        _token.approve(address(paymentProcessor), 0);
+
+        address recipient = address(0xBEEF);
+        uint amount = 1 ether;
+        _setupSinglePayment(recipient, amount);
+
+        // Expect revert for insufficient allowance
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC20Errors.ERC20InsufficientAllowance.selector,
+                address(paymentProcessor),
+                0,
+                amount
+            )
+        );
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
     }
 

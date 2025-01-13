@@ -43,9 +43,6 @@ interface ICrossChainBase_v1 {
     /// @notice Thrown when attempting to execute a message that has already been processed
     error Module__CrossChainBase_MessageAlreadyExecuted();
 
-    /// @notice Thrown when an unsupported or invalid chain ID is provided
-    error Module__CrossChainBase_InvalidChainId();
-
     /// @notice Thrown when the cross-chain message fails verification
     error Module__CrossChainBase_MessageVerificationFailed();
 
