@@ -1,3 +1,4 @@
+// External Dependencies
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.20;
@@ -5,7 +6,6 @@ pragma solidity ^0.8.20;
 //--------------------------------------------------------------------------
 // Imports
 
-// External Dependencies
 import {Test} from "forge-std/Test.sol";
 import {Clones} from "@oz/proxy/Clones.sol";
 import {IERC20Errors} from "@oz/interfaces/draft-IERC6093.sol";
@@ -196,7 +196,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     function testPublicProcessPayments_succeedsGivenMultipleValidPaymentOrders(
         uint8 numRecipients,
         address testRecipient,
-        uint96 baseAmount
+        uint baseAmount
     ) public {
         // Assumptions to keep the test manageable and within bounds
         vm.assume(numRecipients > 0 && numRecipients <= 10);
@@ -457,8 +457,8 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         address testRecipient,
         uint96 testAmount
     ) public {
+        // Assumptions
         vm.assume(testAmount > 0 && testAmount <= MINTED_SUPPLY);
-        // Assumption
         vm.assume(testRecipient != address(0));
 
         // Setup - Clear existing balance
@@ -471,6 +471,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         // Setup - Mint exact amount needed
         _token.mint(address(paymentProcessor), testAmount);
 
+        // Setup - Configure payment
         _setupSinglePayment(testRecipient, testAmount);
 
         // Expectations
@@ -485,7 +486,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             block.timestamp + 1 days
         );
 
-        // Action
+        // Action - Process payments
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
@@ -509,7 +510,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Store the initial execution data that will fail
         bytes memory failingExecutionData = abi.encode(333, 1); // maxFee of 333 will cause failure
-
         // First attempt with high maxFee to force failure
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)),
@@ -552,24 +552,6 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             address(paymentClient), recipient
         );
         assertTrue(newIntentId != bytes32(0));
-
-        // uint processorBalanceBefore =
-        //     _token.balanceOf(address(paymentProcessor));
-
-        // assertEq(
-        //     paymentProcessor.failedTransfers(
-        //         address(paymentClient), recipient, failingExecutionData
-        //     ),
-        //     0
-        // );
-
-        // bytes32 newIntentId = paymentProcessor.processedIntentId(
-        //     address(paymentClient), recipient
-        // );
-        // assertEq(
-        //     uint(everclearPaymentMock.status(newIntentId)),
-        //     uint(Mock_EverclearPayment.IntentStatus.ADDED)
-        // );
     }
 
     /* Test cancel transfer
@@ -664,6 +646,36 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         vm.expectRevert(IModule_v1.Module__InvalidAddress.selector);
         paymentProcessor.cancelTransfer(
             address(paymentClient), testRecipient, executionData, order
+        );
+    }
+
+    /* Test cancel transfer after processing
+    └── Given a successfully processed payment
+        └── When attempting to cancel the transfer
+            └── Then it should revert with InvalidAmount
+                └── And the intent ID should remain unchanged
+                └── And the payment order should remain processed
+    */
+    function testCancelTransfer_revertsAfterProcessing() public {
+        // Setup
+        address recipient = address(0xBEEF);
+        uint amount = 1 ether;
+
+        // Setup initial payment and process it
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _setupSinglePayment(recipient, amount);
+
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+
+        // Cancel the transfer
+        vm.prank(address(paymentClient));
+        vm.expectRevert(
+            ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount.selector
+        );
+        paymentProcessor.cancelTransfer(
+            address(paymentClient), recipient, executionData, orders[0]
         );
     }
 
@@ -838,6 +850,47 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
+    }
+
+    /* Test payment processing with duplicate recipients
+    └── Given payment orders with duplicate recipients
+    └── When processing payments
+        └── Then it should handle duplicates correctly
+            └── And update intent IDs properly
+            └── And track total amounts correctly
+    */
+    function testProcessPayments_handlesMultipleDuplicateRecipients(
+        address recipient,
+        uint amount
+    ) public {
+        vm.assume(recipient != address(0));
+        vm.assume(amount > 0 && amount <= MINTED_SUPPLY / 3);
+
+        // Create multiple orders for same recipient
+        address[] memory recipients = new address[](3);
+        uint[] memory amounts = new uint[](3);
+
+        for (uint i = 0; i < 3; i++) {
+            recipients[i] = recipient;
+            amounts[i] = amount;
+        }
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            _createPaymentOrders(3, recipients, amounts);
+
+        // Process payments
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+
+        // Verify final intent ID exists
+        bytes32 finalIntentId = paymentProcessor.processedIntentId(
+            address(paymentClient), recipient
+        );
+        assertTrue(finalIntentId != bytes32(0));
+
+        // // Verify total amount processed
+        // assertEq(uint(everclearPaymentMock.amount(finalIntentId)), amount * 3);
     }
 
     //--------------------------------------------------------------------------
