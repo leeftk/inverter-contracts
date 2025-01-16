@@ -499,14 +499,16 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 └── And clear the failed transfer record
                 └── And emit FailedTransferRetried event
     */
-    function testRetryFailedTransfer_succeeds() public {
-        // Setup
-        address recipient = address(0xBEEF);
-        uint amount = 1 ether;
+    function testRetryFailedTransfer_succeeds(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
 
         // Setup initial payment
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _setupSinglePayment(recipient, amount);
+            _setupSinglePayment(testRecipient, testAmount);
 
         // Store the initial execution data that will fail
         bytes memory failingExecutionData = abi.encode(333, 1); // maxFee of 333 will cause failure
@@ -520,17 +522,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         assertEq(
             paymentProcessor.failedTransfers(
                 address(paymentClient),
-                recipient,
+                testRecipient,
                 failingExecutionData // Use the same execution data that was used in processPayments
             ),
-            orders[0].amount
+            testAmount
         );
 
         // Now retry with proper execution data
         vm.prank(address(paymentClient));
         paymentProcessor.retryFailedTransfer(
             address(paymentClient),
-            recipient,
+            testRecipient,
             failingExecutionData, // Old execution data that failed
             executionData, // New execution data for retry
             orders[0]
@@ -541,7 +543,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         assertEq(
             paymentProcessor.failedTransfers(
                 address(paymentClient),
-                recipient,
+                testRecipient,
                 failingExecutionData // Check using the original failing execution data
             ),
             0
@@ -549,7 +551,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // 2. New intent was created (should be non-zero)
         bytes32 newIntentId = paymentProcessor.processedIntentId(
-            address(paymentClient), recipient
+            address(paymentClient), testRecipient
         );
         assertTrue(newIntentId != bytes32(0));
     }
@@ -656,14 +658,16 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 └── And the intent ID should remain unchanged
                 └── And the payment order should remain processed
     */
-    function testCancelTransfer_revertsAfterProcessing() public {
-        // Setup
-        address recipient = address(0xBEEF);
-        uint amount = 1 ether;
+    function testCancelTransfer_revertsAfterProcessing(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
 
         // Setup initial payment and process it
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
-            _setupSinglePayment(recipient, amount);
+            _setupSinglePayment(testRecipient, testAmount);
 
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
@@ -675,7 +679,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             ICrossChainBase_v1.Module__CrossChainBase__InvalidAmount.selector
         );
         paymentProcessor.cancelTransfer(
-            address(paymentClient), recipient, executionData, orders[0]
+            address(paymentClient), testRecipient, executionData, orders[0]
         );
     }
 
@@ -802,13 +806,17 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
         └── When attempting to process payment
             └── Then it should revert with InvalidTokenApproval
     */
-    function testProcessPayments_revertsWithoutTokenApproval() public {
+    function testProcessPayments_revertsWithoutTokenApproval(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
         // Reset approval
         _token.approve(address(paymentProcessor), 0);
 
-        address recipient = address(0xBEEF);
-        uint amount = 1 ether;
-        _setupSinglePayment(recipient, amount);
+        _setupSinglePayment(testRecipient, testAmount);
 
         // Expect revert for insufficient allowance
         vm.expectRevert(
@@ -816,9 +824,41 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
                 IERC20Errors.ERC20InsufficientAllowance.selector,
                 address(paymentProcessor),
                 0,
-                amount
+                testAmount
             )
         );
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
+    }
+
+    /* Test payment processing with unsupported token
+    └── Given a payment order with an unsupported token
+    └── When attempting to process payment
+        └── Then it should revert with UnsupportedToken
+    */
+    function testProcessPayments_revertsWithUnsupportedToken(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
+        // Setup payment with unsupported token
+        IERC20PaymentClientBase_v1.PaymentOrder memory order =
+        IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: testRecipient,
+            paymentToken: address(0xDEADBEEF), // Unsupported token address
+            amount: testAmount,
+            start: block.timestamp,
+            cliff: 0,
+            end: block.timestamp + 1 days
+        });
+
+        paymentClient.addPaymentOrder(order);
+
+        // Expect revert due to unsupported token
+        vm.expectRevert();
         paymentProcessor.processPayments(
             IERC20PaymentClientBase_v1(address(paymentClient)), executionData
         );
@@ -860,19 +900,19 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
             └── And track total amounts correctly
     */
     function testProcessPayments_handlesMultipleDuplicateRecipients(
-        address recipient,
-        uint amount
+        address testRecipient,
+        uint testAmount
     ) public {
-        vm.assume(recipient != address(0));
-        vm.assume(amount > 0 && amount <= MINTED_SUPPLY / 3);
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount <= MINTED_SUPPLY / 3);
 
         // Create multiple orders for same recipient
         address[] memory recipients = new address[](3);
         uint[] memory amounts = new uint[](3);
 
         for (uint i = 0; i < 3; i++) {
-            recipients[i] = recipient;
-            amounts[i] = amount;
+            recipients[i] = testRecipient;
+            amounts[i] = testAmount;
         }
 
         IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
@@ -885,7 +925,7 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // Verify final intent ID exists
         bytes32 finalIntentId = paymentProcessor.processedIntentId(
-            address(paymentClient), recipient
+            address(paymentClient), testRecipient
         );
         assertTrue(finalIntentId != bytes32(0));
 
