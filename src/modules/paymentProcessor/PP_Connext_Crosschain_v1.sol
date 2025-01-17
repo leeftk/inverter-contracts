@@ -93,17 +93,7 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
             bytes memory bridgeData =
                 _executeBridgeTransfer(orders[i], executionData);
 
-            if (bytes32(bridgeData) == bytes32(0)) {
-                // Handle failed transfer
-                failedTransfers[clientAddress][orders[i].recipient][executionData]
-                = orders[i].amount;
-                emit TransferFailed(
-                    clientAddress,
-                    orders[i].recipient,
-                    executionData,
-                    orders[i].amount
-                );
-            } else {
+            if (bytes32(bridgeData) != bytes32(0)) {
                 // Handle successful transfer
                 _bridgeData[i] = bridgeData;
                 emit PaymentOrderProcessed(
@@ -118,8 +108,18 @@ contract PP_Connext_Crosschain_v1 is PP_Crosschain_v1 {
                 _paymentId++;
                 processedIntentId[address(client)][orders[i].recipient] =
                     bytes32(bridgeData);
-                client.amountPaid(orders[i].paymentToken, orders[i].amount);
+            } else {
+                // Handle failed transfer
+                failedTransfers[clientAddress][orders[i].recipient][executionData]
+                = orders[i].amount;
+                emit TransferFailed(
+                    clientAddress,
+                    orders[i].recipient,
+                    executionData,
+                    orders[i].amount
+                );
             }
+            client.amountPaid(orders[i].paymentToken, orders[i].amount);
         }
     }
 
