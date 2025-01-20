@@ -144,6 +144,88 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
     //--------------------------------------------------------------------------
     // Payment Processing Tests
 
+    function test_verifyValidPaymentOrder(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY); // Keeping within our minted balance
+
+        address[] memory setupRecipients = new address[](1);
+        setupRecipients[0] = testRecipient;
+        uint[] memory setupAmounts = new uint[](1);
+        setupAmounts[0] = testAmount;
+
+        IERC20PaymentClientBase_v1.PaymentOrder[] memory orders =
+            new IERC20PaymentClientBase_v1.PaymentOrder[](1);
+
+        //1. Test invalid recipient
+        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: address(0),
+            paymentToken: address(_token),
+            amount: setupAmounts[0],
+            start: block.timestamp,
+            cliff: 0,
+            end: block.timestamp + 1 days
+        });
+        assertEq(paymentProcessor.validPaymentOrder(orders[0]), false);
+
+        //2. Test invalid token
+        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: setupRecipients[0],
+            paymentToken: address(0),
+            amount: setupAmounts[0],
+            start: block.timestamp,
+            cliff: 0,
+            end: block.timestamp + 1 days
+        });
+        assertEq(paymentProcessor.validPaymentOrder(orders[0]), false);
+
+        //3. Test invalid amount
+        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: setupRecipients[0],
+            paymentToken: address(_token),
+            amount: 0,
+            start: block.timestamp,
+            cliff: 0,
+            end: block.timestamp + 1 days
+        });
+        assertEq(paymentProcessor.validPaymentOrder(orders[0]), false);
+
+        //4. Test invalid start
+        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: setupRecipients[0],
+            paymentToken: address(_token),
+            amount: setupAmounts[0],
+            start: block.timestamp + 1 days,
+            cliff: 0,
+            end: block.timestamp
+        });
+        assertEq(paymentProcessor.validPaymentOrder(orders[0]), false);
+
+        //5. Test invalid cliff
+        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: setupRecipients[0],
+            paymentToken: address(_token),
+            amount: setupAmounts[0],
+            start: block.timestamp,
+            cliff: 1 days,
+            end: block.timestamp - 1 days
+        });
+        assertEq(paymentProcessor.validPaymentOrder(orders[0]), false);
+
+        //6. Test Valid scenario
+        orders[0] = IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: setupRecipients[0],
+            paymentToken: address(_token),
+            amount: setupAmounts[0],
+            start: block.timestamp,
+            cliff: 0,
+            end: block.timestamp + 1 days
+        });
+        assertEq(paymentProcessor.validPaymentOrder(orders[0]), true);
+    }
+
     /* Test single payment processing
     └── Given single valid payment order
         └── When processing cross-chain payments
@@ -931,6 +1013,31 @@ contract PP_Connext_Crosschain_v1_Test is ModuleTest {
 
         // // Verify total amount processed
         // assertEq(uint(everclearPaymentMock.amount(finalIntentId)), amount * 3);
+    }
+
+    function testProcessPayments_revertsWithExpiredEndDate(
+        address testRecipient,
+        uint testAmount
+    ) public {
+        vm.assume(testRecipient != address(0));
+        vm.assume(testAmount > 0 && testAmount < MINTED_SUPPLY);
+
+        // Setup payment with expired end date
+        IERC20PaymentClientBase_v1.PaymentOrder memory order =
+        IERC20PaymentClientBase_v1.PaymentOrder({
+            recipient: testRecipient,
+            paymentToken: address(_token),
+            amount: testAmount,
+            start: block.timestamp - 2 days,
+            cliff: 0, //@note 33audits -> shouldnt this revert since start and end time are in the past?
+            end: block.timestamp - 1 days // End date in the past
+        });
+
+        paymentClient.addPaymentOrder(order);
+
+        paymentProcessor.processPayments(
+            IERC20PaymentClientBase_v1(address(paymentClient)), executionData
+        );
     }
 
     //--------------------------------------------------------------------------
