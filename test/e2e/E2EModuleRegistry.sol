@@ -23,6 +23,7 @@ import {FM_DepositVault_v1} from "@fm/depositVault/FM_DepositVault_v1.sol";
 import {BancorFormula} from "@fm/bondingCurve/formulas/BancorFormula.sol";
 import {PP_Simple_v2} from "src/modules/paymentProcessor/PP_Simple_v2.sol";
 import {PP_Streaming_v2} from "src/modules/paymentProcessor/PP_Streaming_v2.sol";
+import {PP_Everclear_CrossChain_v1} from "src/modules/paymentProcessor/PP_Everclear_CrossChain_v1.sol";
 import {LM_PC_Bounties_v2} from "@lm/LM_PC_Bounties_v2.sol";
 import {LM_PC_RecurringPayments_v2} from "@lm/LM_PC_RecurringPayments_v2.sol";
 import {LM_PC_PaymentRouter_v2} from "@lm/LM_PC_PaymentRouter_v2.sol";
@@ -490,6 +491,50 @@ contract E2EModuleRegistry is Test {
         gov.registerMetadataInModuleFactory(
             streamingPaymentProcessorMetadata,
             IInverterBeacon_v1(streamingPaymentProcessorBeacon)
+        );
+    }
+
+    // PP_Everclear_CrossChain_v1
+
+    PP_Everclear_CrossChain_v1 everclearPaymentProcessorImpl;
+
+    InverterBeacon_v1 everclearPaymentProcessorBeacon;
+
+    IModule_v1.Metadata everclearPaymentProcessorMetadata = IModule_v1.Metadata(
+        1,
+        0,
+        0,
+        "https://github.com/inverter/everclear-payment-processor",
+        "PP_Everclear_CrossChain_v1"
+    );
+
+    /*
+        // Example Config:
+        IOrchestratorFactory_v1.ModuleConfig(
+            everclearPaymentProcessorMetadata,
+            abi.encode(everClearSpoke)
+        );
+    */
+
+    function setUpEverclearPaymentProcessor() internal {
+        // Deploy module implementations
+        everclearPaymentProcessorImpl = new PP_Everclear_CrossChain_v1();
+
+        // Deploy module beacons
+        everclearPaymentProcessorBeacon = new InverterBeacon_v1(
+            moduleFactory.reverter(),
+            DEFAULT_BEACON_OWNER,
+            everclearPaymentProcessorMetadata.majorVersion,
+            address(everclearPaymentProcessorImpl),
+            everclearPaymentProcessorMetadata.minorVersion,
+            everclearPaymentProcessorMetadata.patchVersion
+        );
+
+        // Register modules at moduleFactory
+        vm.prank(teamMultisig);
+        gov.registerMetadataInModuleFactory(
+            everclearPaymentProcessorMetadata,
+            IInverterBeacon_v1(everclearPaymentProcessorBeacon)
         );
     }
 
