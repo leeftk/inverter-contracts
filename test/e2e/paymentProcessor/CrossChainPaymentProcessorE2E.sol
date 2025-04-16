@@ -22,10 +22,8 @@ import {
     PP_Everclear_CrossChain_v1,
     IPP_Everclear_CrossChain_v1
 } from "@pp/PP_Everclear_CrossChain_v1.sol";
-import {
-    FM_BC_Bancor_Redeeming_VirtualSupply_v1,
-    IFM_BC_Bancor_Redeeming_VirtualSupply_v1
-} from "@fm/bondingCurve/FM_BC_Bancor_Redeeming_VirtualSupply_v1.sol";
+import {LM_PC_PaymentRouter_v2} from "@lm/LM_PC_PaymentRouter_v2.sol";
+import {FM_DepositVault_v1} from "@fm/depositVault/FM_DepositVault_v1.sol";
 import {IModule_v1} from "src/modules/base/IModule_v1.sol";
 
 contract CrosschainPaymentProcessorE2E is E2ETest {
@@ -38,7 +36,8 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
     ERC20Mock collateralToken;
     IOrchestrator_v1 orchestrator;
     PP_Everclear_CrossChain_v1 paymentProcessor;
-    FM_BC_Bancor_Redeeming_VirtualSupply_v1 fundingManager;
+    FM_DepositVault_v1 depositVault;
+    LM_PC_PaymentRouter_v2 paymentRouter;
     ERC20Issuance_v1 issuanceToken;
 
     // Module Configurations array
@@ -58,33 +57,12 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
         // Create collateral token
         collateralToken = new ERC20Mock(COLLATERAL_NAME, COLLATERAL_SYMBOL);
 
-        // 1. Funding Manager
-        setUpBancorVirtualSupplyBondingCurveFundingManager();
-
-        // Setup issuance token properties
-        issuanceToken = new ERC20Issuance_v1(
-            "Bonding Curve Token", "BCT", 18, type(uint).max - 1, address(this)
-        );
-
-        // Setup bonding curve properties
-        IFM_BC_Bancor_Redeeming_VirtualSupply_v1.BondingCurveProperties memory
-            bc_properties = IFM_BC_Bancor_Redeeming_VirtualSupply_v1
-                .BondingCurveProperties({
-                formula: address(formula),
-                reserveRatioForBuying: 333_333,
-                reserveRatioForSelling: 333_333,
-                buyFee: 0,
-                sellFee: 0,
-                buyIsOpen: true,
-                sellIsOpen: true,
-                initialIssuanceSupply: 10 ether,
-                initialCollateralSupply: 30 ether
-            });
-
+        // 1. Funding Manager (Deposit Vault)
+        setUpDepositVaultFundingManager();
         moduleConfigurations.push(
             IOrchestratorFactory_v1.ModuleConfig(
-                bancorVirtualSupplyBondingCurveFundingManagerMetadata,
-                abi.encode(issuanceToken, bc_properties, collateralToken)
+                depositVaultMetadata,
+                abi.encode(address(collateralToken))  // Deposit vault takes token address as config
             )
         );
 
@@ -92,7 +70,8 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
         setUpRoleAuthorizer();
         moduleConfigurations.push(
             IOrchestratorFactory_v1.ModuleConfig(
-                roleAuthorizerMetadata, abi.encode(address(this))
+                roleAuthorizerMetadata, 
+                abi.encode(address(this))
             )
         );
 
@@ -104,6 +83,19 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
                 abi.encode(everClearSpoke, weth)
             )
         );
+        
+
+       // Create PaymentRouter
+        setUpPaymentRouter();
+        moduleConfigurations.push(
+            IOrchestratorFactory_v1.ModuleConfig(
+                paymentRouterMetadata,
+                bytes("")
+            )
+        );
+
+
+        
     }
 
     function test_e2e_CrosschainPaymentProcessor() public {
@@ -114,20 +106,50 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
             independentUpdateAdmin: address(0)
         });
 
-        orchestrator =
-            _create_E2E_Orchestrator(workflowConfig, moduleConfigurations);
+        orchestrator = _create_E2E_Orchestrator(workflowConfig, moduleConfigurations);
 
         // Get module instances
-        fundingManager = FM_BC_Bancor_Redeeming_VirtualSupply_v1(
+        depositVault = FM_DepositVault_v1(
             address(orchestrator.fundingManager())
         );
-        paymentProcessor =
-            PP_Everclear_CrossChain_v1(address(orchestrator.paymentProcessor()));
+        paymentProcessor = PP_Everclear_CrossChain_v1(
+            address(orchestrator.paymentProcessor())
+        );
+
+        address paymentRouter = moduleFactory.createAndInitModule(
+            paymentRouterMetadata, orchestrator, bytes(""), workflowConfig
+        );
+
+        // Add PaymentRouter to Orchestrator
+        orchestrator.initiateAddModuleWithTimelock(paymentRouter);
+        // wait for timelock to expire
+        vm.warp(block.timestamp + 1 weeks);
+        orchestrator.executeAddModule(paymentRouter);
+
+        // Transfer all collateral to the new BC
+
+        LM_PC_PaymentRouter_v2(paymentRouter).grantModuleRole(
+            LM_PC_PaymentRouter_v2(paymentRouter).PAYMENT_PUSHER_ROLE(),
+            address(this)
+        );
+        
+    
+
 
         // Basic setup verification
-        assertTrue(address(fundingManager) != address(0), "FM not initialized");
-        assertTrue(
-            address(paymentProcessor) != address(0), "PP not initialized"
-        );
+        assertTrue(address(depositVault) != address(0), "FM not initialized");
+        assertTrue(address(paymentProcessor) != address(0), "PP not initialized");
+        assertTrue(address(paymentRouter) != address(0), "PR not initialized");
+
+        // Now we can use the payment router to create payments
+        // Example:
+        // LM_PC_PaymentRouter_v2(paymentRouter).pushPayment(
+        //     recipient,
+        //     address(collateralToken),
+        //     amount,
+        //     block.timestamp,
+        //     0,
+        //     block.timestamp
+        // );
     }
 }
