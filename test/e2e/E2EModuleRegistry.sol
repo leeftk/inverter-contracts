@@ -33,6 +33,7 @@ import {AUT_Roles_v1} from "@aut/role/AUT_Roles_v1.sol";
 import {AUT_TokenGated_Roles_v1} from "@aut/role/AUT_TokenGated_Roles_v1.sol";
 import {AUT_EXT_VotingRoles_v1} from
     "src/modules/authorizer/extensions/AUT_EXT_VotingRoles_v1.sol";
+import {PaymentRouterV2Mock} from "test/utils/mocks/modules/PaymentRouterV2Mock.sol";
 
 // Beacon
 import {
@@ -629,7 +630,6 @@ contract E2EModuleRegistry is Test {
 
     // LM_PC_PaymentRouter_v2
     LM_PC_PaymentRouter_v2 paymentRouterImpl;
-
     InverterBeacon_v1 paymentRouterBeacon;
 
     IModule_v1.Metadata public paymentRouterMetadata = IModule_v1.Metadata(
@@ -640,14 +640,17 @@ contract E2EModuleRegistry is Test {
         "LM_PC_PaymentRouter_v2"
     );
 
-    /*
-     IOrchestratorFactory_v1.ModuleConfig paymentRouterFactoryConfig =
-    IOrchestratorFactory_v1.ModuleConfig(
-        paymentRouterMetadata,
-        bytes(""),
-        HAS_NO_DEPENDENCIES, EMPTY_DEPENDENCY_LIST)
+    // PaymentRouterV2Mock
+    PaymentRouterV2Mock paymentRouterMockImpl;
+    InverterBeacon_v1 paymentRouterMockBeacon;
+
+    IModule_v1.Metadata public paymentRouterMockMetadata = IModule_v1.Metadata(
+        1,
+        0,
+        0,
+        "https://github.com/InverterNetwork/contracts",
+        "PaymentRouterV2Mock"
     );
-    */
 
     function setUpPaymentRouter() internal {
         // Deploy module implementations.
@@ -667,6 +670,28 @@ contract E2EModuleRegistry is Test {
         vm.prank(teamMultisig);
         gov.registerMetadataInModuleFactory(
             paymentRouterMetadata, IInverterBeacon_v1(paymentRouterBeacon)
+        );
+    }
+
+    function setUpPaymentRouterMock() internal {
+        // Deploy mock implementation
+        paymentRouterMockImpl = new PaymentRouterV2Mock();
+
+        // Deploy mock beacon
+        paymentRouterMockBeacon = new InverterBeacon_v1(
+            moduleFactory.reverter(),
+            DEFAULT_BEACON_OWNER,
+            paymentRouterMockMetadata.majorVersion,
+            address(paymentRouterMockImpl),
+            paymentRouterMockMetadata.minorVersion,
+            paymentRouterMockMetadata.patchVersion
+        );
+
+        // Register mock at moduleFactory
+        vm.prank(teamMultisig);
+        gov.registerMetadataInModuleFactory(
+            paymentRouterMockMetadata, 
+            IInverterBeacon_v1(paymentRouterMockBeacon)
         );
     }
 

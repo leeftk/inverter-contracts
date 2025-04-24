@@ -22,9 +22,10 @@ import {
     PP_Everclear_CrossChain_v1,
     IPP_Everclear_CrossChain_v1
 } from "@pp/PP_Everclear_CrossChain_v1.sol";
-import {LM_PC_PaymentRouter_v2} from "@lm/LM_PC_PaymentRouter_v2.sol";
 import {FM_DepositVault_v1} from "@fm/depositVault/FM_DepositVault_v1.sol";
 import {IModule_v1} from "src/modules/base/IModule_v1.sol";
+import {PaymentRouterV2Mock} from "test/utils/mocks/modules/PaymentRouterV2Mock.sol";
+import {LM_PC_PaymentRouter_v2} from "@lm/LM_PC_PaymentRouter_v2.sol";
 
 contract CrosschainPaymentProcessorE2E is E2ETest {
     // Collateral token constants
@@ -37,7 +38,7 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
     IOrchestrator_v1 orchestrator;
     PP_Everclear_CrossChain_v1 paymentProcessor;
     FM_DepositVault_v1 depositVault;
-    LM_PC_PaymentRouter_v2 paymentRouter;
+    PaymentRouterV2Mock paymentRouter;
     ERC20Issuance_v1 issuanceToken;
 
     // Module Configurations array
@@ -84,18 +85,14 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
             )
         );
         
-
-       // Create PaymentRouter
-        setUpPaymentRouter();
+        // 4. Payment Router Mock
+        setUpPaymentRouterMock();
         moduleConfigurations.push(
             IOrchestratorFactory_v1.ModuleConfig(
-                paymentRouterMetadata,
+                paymentRouterMockMetadata,
                 bytes("")
             )
         );
-
-
-        
     }
 
     function test_e2e_CrosschainPaymentProcessor() public {
@@ -115,41 +112,45 @@ contract CrosschainPaymentProcessorE2E is E2ETest {
         paymentProcessor = PP_Everclear_CrossChain_v1(
             address(orchestrator.paymentProcessor())
         );
+        address[] memory modules = orchestrator.listModules();
+        paymentRouter = PaymentRouterV2Mock(modules[3]);  // Get the payment router module from the modules array
 
-        address paymentRouter = moduleFactory.createAndInitModule(
-            paymentRouterMetadata, orchestrator, bytes(""), workflowConfig
-        );
-
-        // Add PaymentRouter to Orchestrator
-        orchestrator.initiateAddModuleWithTimelock(paymentRouter);
-        // wait for timelock to expire
-        vm.warp(block.timestamp + 1 weeks);
-        orchestrator.executeAddModule(paymentRouter);
-
-        // Transfer all collateral to the new BC
-
-        LM_PC_PaymentRouter_v2(paymentRouter).grantModuleRole(
-            LM_PC_PaymentRouter_v2(paymentRouter).PAYMENT_PUSHER_ROLE(),
+        // Grant payment pusher role to this test contract
+        LM_PC_PaymentRouter_v2(address(paymentRouter)).grantModuleRole(
+            bytes32("PAYMENT_PUSHER"),  // Use the role string directly since we know it
             address(this)
         );
+
+        // Set different chain IDs for cross-chain payment
         
-    
+        // 1. Deposit tokens into the deposit vault
+        uint depositAmount = 1000 ether;
+        collateralToken.mint(address(this), depositAmount);
+        collateralToken.approve(address(depositVault), depositAmount);
+        depositVault.deposit(depositAmount);
 
+        // 2. Create payment order through the router
+        address recipient = makeAddr("recipient");
+        uint paymentAmount = 1000 ether;
 
-        // Basic setup verification
-        assertTrue(address(depositVault) != address(0), "FM not initialized");
-        assertTrue(address(paymentProcessor) != address(0), "PP not initialized");
-        assertTrue(address(paymentRouter) != address(0), "PR not initialized");
+        uint start = block.timestamp;
+        uint cliff = block.timestamp + 7 days;
+        uint end = block.timestamp + 14 days;
 
-        // Now we can use the payment router to create payments
-        // Example:
-        // LM_PC_PaymentRouter_v2(paymentRouter).pushPayment(
-        //     recipient,
-        //     address(collateralToken),
-        //     amount,
-        //     block.timestamp,
-        //     0,
-        //     block.timestamp
-        // );
+        // Push the payment through the payment router
+        // @note - Not sure if maybe like this is correct or even needed?
+        /// But calling this without the LM_PC_PaymentRouter_v2 wrapper throws an error
+        //
+       paymentRouter.pushPayment(
+            recipient,
+            address(collateralToken),
+            paymentAmount,
+            start,
+            cliff,
+            end
+        );
     }
 }
+
+ 
+
